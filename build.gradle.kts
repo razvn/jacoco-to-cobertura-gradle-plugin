@@ -41,8 +41,9 @@ gradlePlugin {
         create("JacocoToCoberturaPlugin") {
             id = "net.razvan.jacoco-to-cobertura"
             displayName = "Converts jacoco xml reports to cobertura"
-            displayName = "Converts jacoco xml reports to cobertura. Make sure the jacocoTestReport runs before."
+            description = "This plugin converts jacoco xml reports to cobertura. Make sure the `jacocoTestReport` runs before."
             implementationClass = "net.razvan.JacocoToCoberturaPlugin"
         }
     }
 }
+
