@@ -71,7 +71,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
     }
 
     private fun addDefaultPrefixToFile(inputFile: String): String {
-        val position = inputFile.lastIndexOf("/")
+        val position = inputFile.lastIndexOf("/") + 1
         return "${inputFile.substring(0, position)}cobertura-${inputFile.substring(position)}"
     }
 
