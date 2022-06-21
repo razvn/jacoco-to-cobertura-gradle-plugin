@@ -1,5 +1,7 @@
 # JacocoToCobertura Gradle Plugin
 
+![Current release](https://img.shields.io/github/v/release/razvn/jacoco-to-cobertura-gradle-plugin)
+
 The aim of the plugin is to convert the Jacoco XML report to Cobertura report in order for GitLab to use the infos 
 for showing the lines covered by tests in the Merge Request.
 
