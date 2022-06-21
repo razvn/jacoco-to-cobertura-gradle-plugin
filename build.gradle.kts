@@ -8,7 +8,6 @@ plugins {
 }
 
 group = "net.razvan"
-version = "0.9.1"
 
 repositories {
     mavenCentral()
