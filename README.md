@@ -4,7 +4,7 @@
 [![Gradle Plugin Portal](https://img.shields.io/badge/Gradle-v0.9.1-blue.svg)](https://plugins.gradle.org/plugin/net.razvan.jacoco-to-cobertura)
 
 The aim of the plugin is to convert the Jacoco XML report to Cobertura report in order for GitLab to use the infos 
-for showing the lines covered by tests in the Merge Request.
+for [showing the lines covered by tests in the Merge Request](https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html).
 
 The project is an adaptation of the python version [cover2cover](https://github.com/rix0rrr/cover2cover).
 
