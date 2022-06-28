@@ -2,8 +2,10 @@ package net.razvan
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.plugins.JavaPluginExtension
-import org.gradle.api.provider.Property
+import org.gradle.api.tasks.InputFile
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
 import org.gradle.api.tasks.SourceSetContainer
 import org.simpleframework.xml.Serializer
@@ -25,9 +27,13 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 
     private fun convert(project: Project, extension: JacocoToCoberturaExtension) {
         println("Conversion jacoco report to cobertura")
-        val input = extension.inputFile.getOrElse("./build/reports/xml/coverage.xml")
-        val output = extension.outputFile.getOrElse(addDefaultPrefixToFile(input))
         try {
+            val input = extension.inputFile.get().asFile
+                    .also {
+                        if (!it.exists()) throw JacocoToCoberturaException("File `${it.canonicalPath}` does not exists (current dir: `${File(".").canonicalPath})`")
+                    }
+            val output = extension.outputFile.getOrNull()?.asFile ?: defaultOutputFile(input)
+
             val jacocoData = loadJacocoData(input)
             val roots = sourcesRoots(
                     project.extensions.getByType(JavaPluginExtension::class.java).sourceSets,
@@ -52,7 +58,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
     }
 
     @Throws(JacocoToCoberturaException::class)
-    private fun writeCoberturaData(outputFile: String, data: Cobertura.Coverage) = with(File(outputFile)) {
+    private fun writeCoberturaData(outputFile: File, data: Cobertura.Coverage) = with(outputFile) {
         try {
             Persister(Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>")).write(data, this)
         } catch (e: Exception) {
@@ -61,18 +67,20 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
     }
 
     @Throws(JacocoToCoberturaException::class)
-    private fun loadJacocoData(inputFile: String): Jacoco.Report = try {
-        val fileIn = File(inputFile)
-        if (!fileIn.exists()) throw JacocoToCoberturaException("File `${fileIn.canonicalPath}` does not exists (current dir: `${File(".").canonicalPath})`")
+    private fun loadJacocoData(fileIn: File): Jacoco.Report = try {
         val serializer: Serializer = Persister()
         serializer.read(Jacoco.Report::class.java, fileIn)
     } catch (e: Exception) {
         throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
     }
 
-    private fun addDefaultPrefixToFile(inputFile: String): String {
-        val position = inputFile.lastIndexOf("/") + 1
-        return "${inputFile.substring(0, position)}cobertura-${inputFile.substring(position)}"
+    private fun defaultOutputFile(inputFile: File): File {
+        val inputPath = inputFile.canonicalPath
+        val position = inputPath.lastIndexOf("/") + 1
+        val outputPath = "${inputPath.substring(0, position)}cobertura-${inputPath.substring(position)}"
+        val outputFile = File(outputPath)
+        if (!outputFile.canWrite()) throw JacocoToCoberturaException("Can't write to the default location of: `$outputPath`")
+        return outputFile
     }
 
     private fun sourcesRoots(sourcesSet: SourceSetContainer?, jacocoData: Jacoco.Report): Set<String> {
@@ -89,8 +97,11 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 }
 
 interface JacocoToCoberturaExtension {
-    val inputFile: Property<String>
-    val outputFile: Property<String>
+    @get:InputFile
+    val inputFile: RegularFileProperty
+
+    @get:OutputFile
+    val outputFile: RegularFileProperty
 }
 
 private class JacocoToCoberturaException(msg: String) : Exception(msg)
