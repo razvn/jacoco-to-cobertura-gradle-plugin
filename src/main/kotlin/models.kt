@@ -193,8 +193,8 @@ class Jacoco {
         @field:Attribute(name = "name", required = true)
         lateinit var name: String
 
-        @field:Element(name = "sessioninfo", required = true)
-        lateinit var sessionInfo: SessionInfo
+        @field:ElementList(name = "sessioninfo", required = false, inline = true)
+        var sessionInfos: List<SessionInfo> = mutableListOf()
 
         @field:ElementList(name = "package", required = false, inline = true)
         var packages: List<PackageElement> = mutableListOf()
@@ -202,7 +202,7 @@ class Jacoco {
         @field:ElementList(name = "counter", required = false, inline = true)
         override var counters: List<Counter> = mutableListOf()
 
-        fun timestamp(): Long = sessionInfo.start?.toLongOrNull()?.let { it / 1000 } ?: 0
+        fun timestamp(): Long = sessionInfos.firstOrNull()?.start?.toLongOrNull()?.let { it / 1000 } ?: 0
 
         fun packagesNames() = packages.mapNotNull(PackageElement::name).toSet()
 
@@ -315,7 +315,7 @@ class Jacoco {
 
 fun Jacoco.Report.print() {
     println(name)
-    println(sessionInfo.id)
+    println(sessionInfos.map(Jacoco.SessionInfo::id).joinToString(", "))
     packages.forEach {
         println("   package: ${it.name}")
         it.classes.forEach {
