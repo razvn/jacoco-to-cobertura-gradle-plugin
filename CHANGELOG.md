@@ -4,7 +4,7 @@ This list is not intended to be all-encompassing - it will document major and br
 
 ### v1.0.1
 - Fix: multiple sourceinfo entries support in the jacoco report
-- 
+ 
 ### v1.0.0
 - Initial major release
 - configuration change  [Breaking]: `intputFile` and `outputFile` now take a File as param instead of string path
