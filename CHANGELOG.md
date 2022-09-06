@@ -2,6 +2,9 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v1.0.2
+- Fix: support sources from kotlin multiplatform projects
+
 ### v1.0.1
 - Fix: multiple sourceinfo entries support in the jacoco report
  

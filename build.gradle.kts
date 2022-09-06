@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java-gradle-plugin")
-    kotlin("jvm") version "1.7.0"
+    kotlin("jvm") version "1.7.10"
     id("maven-publish")
-    id("com.gradle.plugin-publish") version "0.18.0"
+    id("com.gradle.plugin-publish") version "1.0.0"
 }
 
 group = "net.razvan"
@@ -15,6 +15,7 @@ repositories {
 
 dependencies {
     implementation("org.simpleframework:simple-xml:2.7.1")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
     testImplementation(kotlin("test"))
     testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
 }
