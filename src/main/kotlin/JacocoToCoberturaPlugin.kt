@@ -7,7 +7,7 @@ import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
-import org.gradle.api.tasks.SourceSetContainer
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.simpleframework.xml.Serializer
 import org.simpleframework.xml.core.Persister
 import org.simpleframework.xml.stream.Format
@@ -34,9 +34,33 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     }
             val output = extension.outputFile.getOrNull()?.asFile ?: defaultOutputFile(input)
 
+            val customSourcesConf = emptySet<File>()
+
             val jacocoData = loadJacocoData(input)
+
+            val kotlinSourcesSet = mutableSetOf<File>()
+            val kotlinSources = kotlin.runCatching {
+                project.extensions.getByType(KotlinMultiplatformExtension::class.java)
+                        .sourceSets
+                        .filterNot { it.name.contains("test", true) }
+                        .forEach {
+                            it.kotlin.srcDirs.forEach {
+                                it.walkTopDown().forEach {
+                                    if (it.isFile) kotlinSourcesSet.add(it)
+                                }
+                            }
+                        }
+                kotlinSourcesSet
+            }.getOrNull() ?: kotlinSourcesSet
+            val javaSources = kotlin.runCatching { project.extensions.getByType(JavaPluginExtension::class.java).sourceSets }.getOrNull()
+                    ?.getByName(SourceSet.MAIN_SOURCE_SET_NAME)?.allSource?.files ?: emptySet()
+            val customSources = customSourcesConf
+                    .filter { it.exists() }
+                    .mapNotNull { it.listFiles()?.toList() }
+                    .flatten()
+                    .toSet()
             val roots = sourcesRoots(
-                    project.extensions.getByType(JavaPluginExtension::class.java).sourceSets,
+                    kotlinSources + javaSources + customSources,
                     jacocoData
             )
 
@@ -83,15 +107,16 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
         return outputFile
     }
 
-    private fun sourcesRoots(sourcesSet: SourceSetContainer?, jacocoData: Jacoco.Report): Set<String> {
-        val allSources = sourcesSet?.getByName(SourceSet.MAIN_SOURCE_SET_NAME)?.allSource
-                ?: emptyList()
+    private fun sourcesRoots(allSources: Set<File>, jacocoData: Jacoco.Report): Set<String> {
         val jacocoPackages = jacocoData.packagesNames()
-
         return allSources.map { it.canonicalPath }
                 .mapNotNull { sourceName ->
                     val p = jacocoPackages.firstOrNull { sourceName.contains(it) }
-                    p?.let { sourceName.substringBefore(it) }
+                            ?: jacocoPackages.firstOrNull { sourceName.contains(it.replace("/", ".")) } // in case the package is in dot format
+                    p?.let {
+                        val sourcePath = sourceName.substringBefore(it)
+                        if (sourcePath != sourceName) sourcePath else sourceName.substringBefore(it.replace("/", "."))
+                    }
                 }.toSet()
     }
 }

@@ -1,7 +1,7 @@
 # JacocoToCobertura Gradle Plugin
 
 ![Current release](https://img.shields.io/github/v/release/razvn/jacoco-to-cobertura-gradle-plugin)
-[![Gradle Plugin Portal](https://img.shields.io/badge/Gradle-v1.0.1-blue.svg)](https://plugins.gradle.org/plugin/net.razvan.jacoco-to-cobertura)
+[![Gradle Plugin Portal](https://img.shields.io/badge/Gradle-v1.0.2-blue.svg)](https://plugins.gradle.org/plugin/net.razvan.jacoco-to-cobertura)
 
 The aim of the plugin is to convert the Jacoco XML report to Cobertura report in order for GitLab to use the infos 
 for [showing the lines covered by tests in the Merge Request](https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html).
@@ -14,7 +14,7 @@ The project is an adaptation of the python version [cover2cover](https://github.
 ```kotlin
 plugins {
     jacoco
-    id("net.razvan.jacoco-to-cobertura") version "1.0.1"
+    id("net.razvan.jacoco-to-cobertura") version "1.0.2"
 }
 ```
 
@@ -37,9 +37,15 @@ Run the task: `jacocoToCobertura`. The task should be run after `jacocoTestRepor
 ./gradlew jacocoToCobertura
 ```
 
-or just set it after jacocoTestReport
+or just set it after `jacocoTestReport`
 ```kotlin
 tasks.jacocoTestReport {
+    finalizedBy(tasks.jacocoToCobertura)
+}
+```
+or `koverXmlReport`
+```kotlin
+tasks.koverXmlReport {
     finalizedBy(tasks.jacocoToCobertura)
 }
 ```
