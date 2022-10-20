@@ -53,7 +53,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                 kotlinSourcesSet
             }.getOrNull() ?: kotlinSourcesSet
             val javaSources = kotlin.runCatching { project.extensions.getByType(JavaPluginExtension::class.java).sourceSets }.getOrNull()
-                    ?.getByName(SourceSet.MAIN_SOURCE_SET_NAME)?.allSource?.files ?: emptySet()
+                    ?.findByName(SourceSet.MAIN_SOURCE_SET_NAME)?.allSource?.files ?: emptySet()
             val customSources = customSourcesConf
                     .filter { it.exists() }
                     .mapNotNull { it.listFiles()?.toList() }
