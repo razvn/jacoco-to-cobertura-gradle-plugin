@@ -189,15 +189,16 @@ class Jacoco {
     }
 
     @Root(strict = false, name = "report")
-    class Report : Counters {
+    data class Report(
+        @field:ElementList(name = "package", required = false, inline = true)
+        var packages: List<PackageElement> = mutableListOf()
+    ) : Counters {
         @field:Attribute(name = "name", required = true)
         lateinit var name: String
 
         @field:ElementList(name = "sessioninfo", required = false, inline = true)
         var sessionInfos: List<SessionInfo> = mutableListOf()
 
-        @field:ElementList(name = "package", required = false, inline = true)
-        var packages: List<PackageElement> = mutableListOf()
 
         @field:ElementList(name = "counter", required = false, inline = true)
         override var counters: List<Counter> = mutableListOf()
