@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("java-gradle-plugin")
-    kotlin("jvm") version "1.7.10"
+    kotlin("jvm") version "1.7.20"
     id("maven-publish")
     id("com.gradle.plugin-publish") version "1.0.0"
 }
@@ -15,9 +15,9 @@ repositories {
 
 dependencies {
     implementation("org.simpleframework:simple-xml:2.7.1")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.10")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:1.7.20")
     testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.2")
+    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
 }
 
 tasks.test {
