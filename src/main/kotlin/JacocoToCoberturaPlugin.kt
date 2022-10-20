@@ -4,6 +4,8 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.plugins.JavaPluginExtension
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
@@ -64,7 +66,17 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     jacocoData
             )
 
-            writeCoberturaData(output, transformData(jacocoData, roots))
+            if (extension.splitByPackage.getOrElse(false)) {
+                jacocoData.packages.forEach { packageElement ->
+                    val packageName = packageElement.name?.replace('/', '.')
+                    val packageData = jacocoData.copy(packages = listOf(packageElement))
+                    val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
+                    writeCoberturaData(packageOut, transformData(packageData, roots))
+                }
+            } else {
+                writeCoberturaData(output, transformData(jacocoData, roots))
+            }
+
             println("Cobertura report generated in: `$output`")
         } catch (e: Exception) {
             println("Error while running JacocoToCobertura conversion: `${e.message}")
@@ -127,6 +139,9 @@ interface JacocoToCoberturaExtension {
 
     @get:OutputFile
     val outputFile: RegularFileProperty
+
+    @get:Input
+    val splitByPackage: Property<Boolean>
 }
 
 private class JacocoToCoberturaException(msg: String) : Exception(msg)
