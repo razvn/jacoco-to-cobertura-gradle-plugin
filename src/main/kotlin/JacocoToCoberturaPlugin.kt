@@ -9,7 +9,7 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.SourceSet
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinAndroidProjectExtension
 import org.simpleframework.xml.Serializer
 import org.simpleframework.xml.core.Persister
 import org.simpleframework.xml.stream.Format
@@ -42,7 +42,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 
             val kotlinSourcesSet = mutableSetOf<File>()
             val kotlinSources = kotlin.runCatching {
-                project.extensions.getByType(KotlinMultiplatformExtension::class.java)
+                project.extensions.getByType(KotlinAndroidProjectExtension::class.java)
                         .sourceSets
                         .filterNot { it.name.contains("test", true) }
                         .forEach {
@@ -65,6 +65,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     kotlinSources + javaSources + customSources,
                     jacocoData
             )
+            println("Found ${kotlinSources.size} Kotlin Android Sources.")
 
             if (extension.splitByPackage.getOrElse(false)) {
                 jacocoData.packages.forEach { packageElement ->
