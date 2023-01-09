@@ -35,6 +35,8 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                         if (!it.exists()) throw JacocoToCoberturaException("File `${it.canonicalPath}` does not exists (current dir: `${File(".").canonicalPath})`")
                     }
             val output = extension.outputFile.orNull?.asFile ?: defaultOutputFile(input)
+            makeDirsIfNeeded(output.parentFile)
+
             val splitByPackage = extension.splitByPackage.getOrElse(false)
 
             log(extension,"\tJacocoToCobertura: Calculated configuration: input: $input, output: $output, splitByPackage: $splitByPackage")
@@ -83,6 +85,17 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
             println("Error while running JacocoToCobertura conversion: `${e.message} [configuration: input: `${extension.inputFile.get()}` | output: `${extension.outputFile.get()}`]")
             if (e !is JacocoToCoberturaException) {
                 throw e
+            }
+        }
+    }
+
+    @Throws(JacocoToCoberturaException::class)
+    private fun makeDirsIfNeeded(file: File?) {
+        if(file != null && !file.exists()) {
+            try {
+                if (!file.mkdirs()) throw JacocoToCoberturaException("`mkdirs()` return false")
+            } catch (e: Exception) {
+                throw JacocoToCoberturaException("Output file directory `${file.canonicalPath} does not exists and couldn't be created, error: `${e.message}`")
             }
         }
     }

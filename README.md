@@ -29,7 +29,8 @@ Options:
 You must set at least the `inputFile` to the location where Jacoco XML report can be found.
 
 If you set an `outoutFile` the Cobertura generated report will be generated there otherwise the default will be in the 
-same directory as the `inputFile` with a `cobertura-` prefix.
+same directory as the `inputFile` with a `cobertura-` prefix. 
+If the directory `outputFile`'s directory or parent directory does not exist, they wil be created (if possible).
 
 If you set `splitByPackage` property to `true` it will generate multiple reports files by package name.
 
