@@ -28,14 +28,16 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
     }
 
     private fun convert(project: Project, extension: JacocoToCoberturaExtension) {
-        println("Conversion jacoco report to cobertura")
+        log(extension,"Conversion jacoco report to cobertura")
         try {
             val input = extension.inputFile.get().asFile
                     .also {
                         if (!it.exists()) throw JacocoToCoberturaException("File `${it.canonicalPath}` does not exists (current dir: `${File(".").canonicalPath})`")
                     }
-            val output = extension.outputFile.getOrNull()?.asFile ?: defaultOutputFile(input)
+            val output = extension.outputFile.orNull?.asFile ?: defaultOutputFile(input)
+            val splitByPackage = extension.splitByPackage.getOrElse(false)
 
+            log(extension,"\tJacocoToCobertura: Calculated configuration: input: $input, output: $output, splitByPackage: $splitByPackage")
             val customSourcesConf = emptySet<File>()
 
             val jacocoData = loadJacocoData(input)
@@ -45,9 +47,9 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                 project.extensions.getByType(KotlinMultiplatformExtension::class.java)
                         .sourceSets
                         .filterNot { it.name.contains("test", true) }
-                        .forEach {
-                            it.kotlin.srcDirs.forEach {
-                                it.walkTopDown().forEach {
+                        .forEach { sourcesSet ->
+                            sourcesSet.kotlin.srcDirs.forEach { file ->
+                                file.walkTopDown().forEach {
                                     if (it.isFile) kotlinSourcesSet.add(it)
                                 }
                             }
@@ -61,12 +63,11 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     .mapNotNull { it.listFiles()?.toList() }
                     .flatten()
                     .toSet()
-            val roots = sourcesRoots(
-                    kotlinSources + javaSources + customSources,
-                    jacocoData
-            )
+            val allSources = kotlinSources + javaSources + customSources
 
-            if (extension.splitByPackage.getOrElse(false)) {
+            val roots = sourcesRoots(allSources, jacocoData)
+
+            if (splitByPackage) {
                 jacocoData.packages.forEach { packageElement ->
                     val packageName = packageElement.name?.replace('/', '.')
                     val packageData = jacocoData.copy(packages = listOf(packageElement))
@@ -77,9 +78,9 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                 writeCoberturaData(output, transformData(jacocoData, roots))
             }
 
-            println("Cobertura report generated in: `$output`")
+            log(extension,"Cobertura report generated in: `$output`")
         } catch (e: Exception) {
-            println("Error while running JacocoToCobertura conversion: `${e.message}")
+            println("Error while running JacocoToCobertura conversion: `${e.message} [configuration: input: `${extension.inputFile.get()}` | output: `${extension.outputFile.get()}`]")
             if (e !is JacocoToCoberturaException) {
                 throw e
             }
@@ -131,6 +132,10 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     }
                 }.toSet()
     }
+
+    fun log(extension: JacocoToCoberturaExtension, msg: String) {
+        if (extension.verbose.getOrElse(false)) println(msg)
+    }
 }
 
 interface JacocoToCoberturaExtension {
@@ -142,6 +147,9 @@ interface JacocoToCoberturaExtension {
 
     @get:Input
     val splitByPackage: Property<Boolean>
+
+    @get:Input
+    val verbose: Property<Boolean>
 }
 
 private class JacocoToCoberturaException(msg: String) : Exception(msg)
