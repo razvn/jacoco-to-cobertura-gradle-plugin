@@ -73,12 +73,6 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 
             log(extension, "Sources: - Kotlin: `${kotlinSources.size}`, Java: `${javaSources.size}`")
             val allSources = kotlinSources + javaSources + customSources
-            kotlinSources.forEach {
-                println("Kotlin - ${it.canonicalPath}")
-            }
-            javaSources.forEach {
-                println("Java - ${it.canonicalPath}")
-            }
             val roots = sourcesRoots(allSources, jacocoData)
 
             if (splitByPackage) {
