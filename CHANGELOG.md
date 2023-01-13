@@ -2,6 +2,9 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v1.1.2
+- Remove debugging prints forgot
+ 
 ### v1.1.1
 - Add verbose option that prints some output when set to true otherwise if everything runs ok no output is produced
 - Creates the output directories needed (if possible).
