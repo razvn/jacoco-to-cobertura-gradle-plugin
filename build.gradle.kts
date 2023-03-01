@@ -1,9 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    id("java-gradle-plugin")
-    kotlin("jvm") version "1.8.10"
-    id("maven-publish")
+    `kotlin-dsl`
     id("com.gradle.plugin-publish") version "1.1.0"
 }
 
