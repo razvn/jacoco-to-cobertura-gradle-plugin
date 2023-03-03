@@ -35,7 +35,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
             splitByPackage.convention(false)
         }
 
-        pluginManager.withPlugin(JacocoPlugin.PLUGIN_EXTENSION_NAME) {
+        plugins.withType<JacocoPlugin>().configureEach {
             tasks.withType<JacocoReport>().singleOrNull()?.let { jacocoTask ->
                 coberturaTask.configure {
                     /*
