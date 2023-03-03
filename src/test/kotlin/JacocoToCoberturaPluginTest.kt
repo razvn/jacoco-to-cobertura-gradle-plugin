@@ -8,7 +8,7 @@ class JacocoToCoberturaPluginTest {
     @Test
     fun `task exists`() {
         val project = ProjectBuilder.builder().build()
-        project.pluginManager.apply(JacocoToCoberturaPlugin::class)
+        project.plugins.apply(JacocoToCoberturaPlugin::class)
 
         assertDoesNotThrow {
             project.tasks.getByName(JacocoToCoberturaPlugin.TASK_NAME)
