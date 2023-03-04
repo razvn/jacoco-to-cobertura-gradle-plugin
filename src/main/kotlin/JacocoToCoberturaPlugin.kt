@@ -123,7 +123,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             }
         } else {
             writeCoberturaData(output, transformData(jacocoData, sourceDirectories))
-            logger.info("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
+            logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
         }
     }
 
