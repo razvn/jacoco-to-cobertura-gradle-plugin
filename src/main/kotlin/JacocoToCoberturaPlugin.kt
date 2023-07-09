@@ -108,7 +108,11 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         val splitByPackage = splitByPackage.getOrElse(false)
 
         logger.debug(
-            "Calculated configuration: input: $input, output: $output, splitByPackage: $splitByPackage, sourceDirs: ${sourceDirectories.joinToString("\n", "\n")}"
+            "Calculated configuration: input: {}, output: {}, splitByPackage: {}, sourceDirs: {}",
+            input,
+            output,
+            splitByPackage,
+            sourceDirectories.joinToString("\n", "\n")
         )
 
         val jacocoData = loadJacocoData(input)

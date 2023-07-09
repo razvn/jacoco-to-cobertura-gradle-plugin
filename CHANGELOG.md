@@ -2,6 +2,10 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v1.2.0
+- Cleaned-up and modernized. H/T @bddckr
+- configuration change [Breaking]: see readme for details
+
 ### v1.1.2
 - Remove debugging prints forgot
  
