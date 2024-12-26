@@ -82,7 +82,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     }
 
     @TaskAction
-    private fun convert() {
+    fun convert() {
         val consoleRenderer = ConsoleRenderer()
 
         logger.debug("Converting JaCoCo report to Cobertura")
