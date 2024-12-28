@@ -2,6 +2,11 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v1.3.0
+- Upgrade to gradle 8.12 & lib updates H/T @eliezio
+- Added new config option `rootPackageToRemove` to strip the root package from the filename name in the cobertura report. (useful for kotlin root classe that are not in a package directory)
+- Fix: filename incorrect path separator (from `.` to `/`)
+
 ### v1.2.0
 - Cleaned-up and modernized. H/T @bddckr
 - configuration change [Breaking]: see readme for details

@@ -1,11 +1,6 @@
 package net.razvan
 
-import org.simpleframework.xml.Attribute
-import org.simpleframework.xml.Element
-import org.simpleframework.xml.ElementList
-import org.simpleframework.xml.Path
-import org.simpleframework.xml.Root
-import org.simpleframework.xml.Text
+import org.simpleframework.xml.*
 
 class Cobertura {
     abstract class Counters {
@@ -20,7 +15,7 @@ class Cobertura {
     }
 
     @Root(strict = false, name = "coverage")
-    class Coverage(j: Jacoco.Report, sources: Collection<String> = emptyList()) : Counters() {
+    class Coverage(j: Jacoco.Report, sources: Collection<String> = emptyList(), rootPackageToRemove: String? = null) : Counters() {
         @field:Attribute(name = "timestamp", required = true)
         val timestamp: Long = j.timestamp()
 
@@ -30,7 +25,7 @@ class Cobertura {
 
         @field:Path("packages")
         @field:ElementList(name = "packages", required = false, inline = true)
-        val packages: List<Package> = j.packages.map { Package(it) }
+        val packages: List<Package> = j.packages.map { Package(it, rootPackageToRemove) }
 
         init {
             lineRate = j.lineRate()
@@ -40,13 +35,13 @@ class Cobertura {
     }
 
     @Root(strict = false, name = "package")
-    class Package(p: Jacoco.PackageElement) : Counters() {
+    class Package(p: Jacoco.PackageElement, rootPackageToRemove: String? = null) : Counters() {
         @field:Attribute(name = "name", required = true)
         val name: String = p.name ?: ""
 
         @field:Path("classes")
         @field:ElementList(name = "classes", required = false, inline = true)
-        val classes: List<ClassElement> = p.classes.map { ClassElement(it, p) }
+        val classes: List<ClassElement> = p.classes.map { ClassElement(it, p, rootPackageToRemove) }
 
         init {
             lineRate = p.lineRate()
@@ -56,12 +51,12 @@ class Cobertura {
     }
 
     @Root(strict = false, name = "class")
-    class ClassElement(c: Jacoco.ClassElement, jPack: Jacoco.PackageElement) : Counters() {
+    class ClassElement(c: Jacoco.ClassElement, jPack: Jacoco.PackageElement, rootPackageToRemove: String? = null) : Counters() {
         @field:Attribute(name = "name", required = true)
         val name: String = c.name ?: ""
 
         @field:Attribute(name = "filename", required = true)
-        val filename: String = "${jPack.name ?: ""}/${c.sourcefilename ?: ""}"
+        val filename: String = "${cleanPackageName(jPack.name, rootPackageToRemove)}${c.sourcefilename ?: ""}"
 
         @field:Path("methods")
         @field:ElementList(name = "methods", required = false, inline = true)
@@ -71,6 +66,14 @@ class Cobertura {
             lineRate = c.lineRate()
             branchRate = c.branchRate()
             complexity = c.complexity()
+        }
+
+        private fun cleanPackageName(name: String?, rootPackageToRemove: String?): String {
+            val pkg = name ?: ""
+            return (rootPackageToRemove?.let { pkg.removePrefix(it) } ?: pkg).let {
+                val path = it.removePrefix(".").replace(".", "/")
+                if (path.isNotEmpty()) "$path/" else ""
+            }
         }
     }
 

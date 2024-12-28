@@ -19,12 +19,13 @@ plugins {
 
 ### Configure the task
 
-| Property            | Description | Default Value |
-|---------------------|---|--|
-| `inputFile`         | JaCoCo XML file to read | XML report of single `JacocoReport` task found in the project; must be specified manually if zero or more than one `JacocoReport` task exists |
-| `outputFile`        | Cobertura XML file to generate | `cobertura-${inputFile.nameWithoutExtension}.xml` in the directory of `inputFile` |
-| `sourceDirectories` | Directories containing source files the JaCoCo report used | Source directories of single `JacocoReport` task found in the project; must be specified manually if zero or more than one `JacocoReport` tasks exist |
-| `splitByPackage`    | Whether to generate one Cobertura report per package | `false` |
+| Property               | Description                                                | Default Value |
+|------------------------|------------------------------------------------------------|--|
+| `inputFile`            | JaCoCo XML file to read                                    | XML report of single `JacocoReport` task found in the project; must be specified manually if zero or more than one `JacocoReport` task exists |
+| `outputFile`           | Cobertura XML file to generate                             | `cobertura-${inputFile.nameWithoutExtension}.xml` in the directory of `inputFile` |
+| `sourceDirectories`    | Directories containing source files the JaCoCo report used | Source directories of single `JacocoReport` task found in the project; must be specified manually if zero or more than one `JacocoReport` tasks exist |
+| `splitByPackage`       | Whether to generate one Cobertura report per package       | `false` |
+| `rootPackageToRemove`  | Root package to remove from the begging of filenames       | `` |
 
 > **Note**
 > Due to the way the default values are set, projects that apply either the [JaCoCo plugin](https://docs.gradle.org/userguide/jacoco_plugin.html#jacoco_plugin) or the [JaCoCo Report Aggregation plugin](https://docs.gradle.org/userguide/jacoco_report_aggregation_plugin.html), work without requiring custom configuration of the `inputFile`, `outputFile` and `sourceDirectories` properties.
@@ -36,6 +37,7 @@ tasks.named<JacocoToCoberturaTask>(JacocoToCoberturaPlugin.TASK_NAME) {
     outputFile.set(layout.buildDirectory.file("reports/xml/cobertura.xml"))
     sourceDirectories.from(layout.projectDirectory.dir("src/main/java"))
     splitByPackage.set(true)
+    rootPackageToRemove.set("com.example")
 }
 ```
 

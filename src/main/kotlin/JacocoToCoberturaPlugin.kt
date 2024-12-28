@@ -10,6 +10,7 @@ import org.gradle.api.tasks.IgnoreEmptyDirectories
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.PathSensitive
 import org.gradle.api.tasks.PathSensitivity
@@ -63,6 +64,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 }
 
 abstract class JacocoToCoberturaTask : DefaultTask() {
+    @get:Optional
     @get:InputFile
     abstract val inputFile: RegularFileProperty
 
@@ -76,6 +78,9 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
 
     @get:Input
     abstract val splitByPackage: Property<Boolean>
+
+    @get:Input
+    abstract val rootPackageToRemove: Property<String>
 
     init {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -106,6 +111,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
 
         val sourceDirectories = sourceDirectories.files.map { it.absolutePath }
         val splitByPackage = splitByPackage.getOrElse(false)
+        val rootPackage = rootPackageToRemove.getOrElse("").takeIf { it.isNotBlank() }
 
         logger.debug(
             "Calculated configuration: input: {}, output: {}, splitByPackage: {}, sourceDirs: {}",
@@ -122,11 +128,11 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
                 val packageName = packageElement.name?.replace('/', '.')
                 val packageData = jacocoData.copy(packages = listOf(packageElement))
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
-                writeCoberturaData(packageOut, transformData(packageData, sourceDirectories))
+                writeCoberturaData(packageOut, transformData(packageData, sourceDirectories, rootPackage))
                 logger.lifecycle("Cobertura report for package $packageName generated at ${consoleRenderer.asClickableFileUrl(packageOut)}")
             }
         } else {
-            writeCoberturaData(output, transformData(jacocoData, sourceDirectories))
+            writeCoberturaData(output, transformData(jacocoData, sourceDirectories, rootPackage))
             logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
         }
     }
@@ -138,8 +144,8 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
     }
 
-    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>) = try {
-        Cobertura.Coverage(jacocoData, sources)
+    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
+        Cobertura.Coverage(jacocoData, sources, rootPackageToRemove)
     } catch (e: Exception) {
         throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
     }
