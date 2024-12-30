@@ -41,6 +41,19 @@ tasks.named<JacocoToCoberturaTask>(JacocoToCoberturaPlugin.TASK_NAME) {
 }
 ```
 
+> **Note**
+> If you don't want the `JacocoToCobertura` task to fail if the inputFile does not exist use the `onlyIf` on the configuration to make sure the task runs only if the file exists:
+```kotlin
+tasks.named<JacocoToCoberturaTask>(JacocoToCoberturaPlugin.TASK_NAME) {
+	val jacocoReport = project.layout.buildDirectory.file("reports/kover/report_that_does_not_exist.xml")
+	onlyIf {
+	    jacocoReport.get().asFile.exists()
+	}
+	inputFile.set(jacocoReport)
+	outputFile.set(project.layout.buildDirectory.file("reports/kover/cobertura.xml"))
+}
+```
+
 ### Run the task
 
 Run the task `jacocoToCobertura`:
