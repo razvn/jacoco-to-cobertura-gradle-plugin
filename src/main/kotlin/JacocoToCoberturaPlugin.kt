@@ -6,15 +6,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.IgnoreEmptyDirectories
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.internal.logging.ConsoleRenderer
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
@@ -29,11 +21,17 @@ import java.io.File
 class JacocoToCoberturaPlugin : Plugin<Project> {
     override fun apply(project: Project) = project.run {
         val coberturaTask = tasks.register<JacocoToCoberturaTask>(TASK_NAME) {
-            outputFile.fileProvider(inputFile.map { inputFile ->
-                inputFile.asFile.parentFile.resolve("cobertura-${inputFile.asFile.nameWithoutExtension}.xml")
-            })
+            inputFile.orNull
+                ?.let {
+                    val file = File(it)
+                    file.parentFile.resolve("cobertura-${file.nameWithoutExtension}.xml")
+                }
+                ?.also {
+                    outputFile.fileValue(it)
+                }
 
             splitByPackage.convention(false)
+            failOnInputNotFound.convention(false)
         }
 
         plugins.withType<JacocoPlugin>().configureEach {
@@ -50,7 +48,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     // inputFile.convention(jacocoTask.reports.xml.outputLocation)
 
                     dependsOn(jacocoTask)
-                    inputFile.convention(jacocoTask.reports.xml.outputLocation.locationOnly)
+                    inputFile.convention(jacocoTask.reports.xml.outputLocation.locationOnly.get().asFile.absolutePath)
 
                     sourceDirectories.from(jacocoTask.sourceDirectories)
                 }
@@ -64,9 +62,9 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 }
 
 abstract class JacocoToCoberturaTask : DefaultTask() {
+    @get:Input
     @get:Optional
-    @get:InputFile
-    abstract val inputFile: RegularFileProperty
+    abstract val inputFile: Property<String>
 
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
@@ -80,6 +78,10 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     abstract val splitByPackage: Property<Boolean>
 
     @get:Input
+    abstract val failOnInputNotFound: Property<Boolean>
+
+    @get:Input
+    @get:Optional
     abstract val rootPackageToRemove: Property<String>
 
     init {
@@ -89,15 +91,24 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     @TaskAction
     fun convert() {
         val consoleRenderer = ConsoleRenderer()
+        val shouldFailOnInputNotFound = failOnInputNotFound.getOrElse(false)
 
         logger.debug("Converting JaCoCo report to Cobertura")
 
-        val input = inputFile.asFile.get()
-            .also {
-                if (!it.exists()) throw JacocoToCoberturaException(
-                    "File `${it.absolutePath}` does not exist"
-                )
+        val input = inputFile.orNull
+            ?.let {
+                val file = File(it)
+                if (file.exists()) file
+                else {
+                    if (shouldFailOnInputNotFound) {
+                        throw JacocoToCoberturaException("File `$it` does not exist")
+                    } else {
+                        logger.lifecycle("Jacoco report `$it` not found, no conversion done.")
+                        null
+                    }
+                }
             }
+            ?: return
         val output = outputFile.asFile.get()
             .also {
                 if (!it.parentFile.exists()) {
@@ -114,11 +125,13 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         val rootPackage = rootPackageToRemove.getOrElse("").takeIf { it.isNotBlank() }
 
         logger.debug(
-            "Calculated configuration: input: {}, output: {}, splitByPackage: {}, sourceDirs: {}",
+            "Calculated configuration: input: {}, output: {}, splitByPackage: {}, sourceDirs: {}, rootPackageToRemove: {}, failOnInputNotFound: {}",
             input,
             output,
             splitByPackage,
-            sourceDirectories.joinToString("\n", "\n")
+            sourceDirectories.joinToString("\n", "\n"),
+            rootPackage,
+            shouldFailOnInputNotFound
         )
 
         val jacocoData = loadJacocoData(input)
@@ -129,7 +142,13 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
                 val packageData = jacocoData.copy(packages = listOf(packageElement))
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
                 writeCoberturaData(packageOut, transformData(packageData, sourceDirectories, rootPackage))
-                logger.lifecycle("Cobertura report for package $packageName generated at ${consoleRenderer.asClickableFileUrl(packageOut)}")
+                logger.lifecycle(
+                    "Cobertura report for package $packageName generated at ${
+                        consoleRenderer.asClickableFileUrl(
+                            packageOut
+                        )
+                    }"
+                )
             }
         } else {
             writeCoberturaData(output, transformData(jacocoData, sourceDirectories, rootPackage))
@@ -144,11 +163,12 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
     }
 
-    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
-        Cobertura.Coverage(jacocoData, sources, rootPackageToRemove)
-    } catch (e: Exception) {
-        throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
-    }
+    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>, rootPackageToRemove: String?) =
+        try {
+            Cobertura.Coverage(jacocoData, sources, rootPackageToRemove)
+        } catch (e: Exception) {
+            throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
+        }
 
     private fun writeCoberturaData(outputFile: File, data: Cobertura.Coverage) = with(outputFile) {
         try {
