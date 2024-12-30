@@ -4,7 +4,10 @@ This list is not intended to be all-encompassing - it will document major and br
 
 ### v1.4.0
 - configuration change [Breaking]: inputFile is a path instead of a file object so the plugin won't fail if the file does not exist (see readme for details)
-- add a new configuration option `failOnInputNotFound` - if set to true the task will fail if the inputFile does not exist, otherwise the task  will exit with a la log message.  
+- add a new configuration option `failOnInputNotFound` - if set to true the task will fail if the inputFile does not exist, otherwise the task  will exit with a la log message.
+
+### v1.3.1
+- Config option `rootPackageToRemove` is optional H/T @eliezio
 
 ### v1.3.0
 - Upgrade to gradle 8.12 & lib updates H/T @eliezio

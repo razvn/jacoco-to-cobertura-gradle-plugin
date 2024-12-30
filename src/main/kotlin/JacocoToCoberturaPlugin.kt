@@ -77,6 +77,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     @get:Input
     abstract val splitByPackage: Property<Boolean>
 
+    @get:Optional
     @get:Input
     abstract val failOnInputNotFound: Property<Boolean>
 
