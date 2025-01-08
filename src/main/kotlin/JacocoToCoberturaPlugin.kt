@@ -21,9 +21,6 @@ import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
-import org.simpleframework.xml.Serializer
-import org.simpleframework.xml.core.Persister
-import org.simpleframework.xml.stream.Format
 import java.io.File
 
 class JacocoToCoberturaPlugin : Plugin<Project> {
@@ -64,7 +61,6 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 }
 
 abstract class JacocoToCoberturaTask : DefaultTask() {
-    @get:Optional
     @get:InputFile
     abstract val inputFile: RegularFileProperty
 
@@ -121,43 +117,44 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             splitByPackage,
             sourceDirectories.joinToString("\n", "\n")
         )
-
-        val jacocoData = loadJacocoData(input)
+        val j2c = J2CJackson()
+        val jacocoData = j2c.loadJacocoData(input)
 
         if (splitByPackage) {
             jacocoData.packages.forEach { packageElement ->
                 val packageName = packageElement.name?.replace('/', '.')
                 val packageData = jacocoData.copy(packages = listOf(packageElement))
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
-                writeCoberturaData(packageOut, transformData(packageData, sourceDirectories, rootPackage))
+                j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
                 logger.lifecycle("Cobertura report for package $packageName generated at ${consoleRenderer.asClickableFileUrl(packageOut)}")
             }
         } else {
-            writeCoberturaData(output, transformData(jacocoData, sourceDirectories, rootPackage))
+            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
             logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
         }
     }
-
-    private fun loadJacocoData(fileIn: File): Jacoco.Report = try {
+/*
+    private fun loadJacocoData(fileIn: File): JacocoSimpleXML.Report = try {
         val serializer: Serializer = Persister()
-        serializer.read(Jacoco.Report::class.java, fileIn)
+        serializer.read(JacocoSimpleXML.Report::class.java, fileIn)
     } catch (e: Exception) {
         throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
     }
 
-    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
-        Cobertura.Coverage(jacocoData, sources, rootPackageToRemove)
+    private fun transformData(jacocoData: JacocoSimpleXML.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
+        CoberturaSimpleXML.Coverage(jacocoData, sources, rootPackageToRemove)
     } catch (e: Exception) {
         throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
     }
 
-    private fun writeCoberturaData(outputFile: File, data: Cobertura.Coverage) = with(outputFile) {
+    private fun writeCoberturaData(outputFile: File, data: CoberturaSimpleXML.Coverage) = with(outputFile) {
         try {
             Persister(Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>")).write(data, this)
         } catch (e: Exception) {
             throw JacocoToCoberturaException("Writing Cobertura Data to file `${this.canonicalPath}` error: `${e.message}`")
         }
     }
+ */
 }
 
-private class JacocoToCoberturaException(msg: String) : Exception(msg)
+class JacocoToCoberturaException(msg: String) : Exception(msg)

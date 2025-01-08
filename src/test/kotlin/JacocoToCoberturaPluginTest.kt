@@ -1,4 +1,5 @@
-import net.razvan.JacocoToCoberturaPlugin
+package net.razvan
+
 import org.gradle.kotlin.dsl.apply
 import org.gradle.testfixtures.ProjectBuilder
 import org.junit.jupiter.api.Test

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage complexity="7.0" timestamp="1435852061" version="1.0" line-rate="0.23076923076923078" branch-rate="0.25" lines-covered="3" lines-valid="13" branches-covered="1" branches-valid="4">
+  <sources>
+    <source>.</source>
+  </sources>
+  <packages>
+    <package complexity="7.0" name="com.wmbest.myapplicationtest" line-rate="0.23076923076923078" branch-rate="0.25">
+      <classes>
+        <class complexity="7.0" name="com.wmbest.myapplicationtest.MainActivity" filename="com/wmbest/myapplicationtest/MainActivity.java" line-rate="0.23076923076923078" branch-rate="0.25">
+          <methods>
+            <method name="&lt;init&gt;" signature="()V" line-rate="0.0" branch-rate="0.0">
+              <lines>
+                <line number="8" hits="0" branch="false"/>
+              </lines>
+            </method>
+            <method name="checkTheseLines" signature="()Ljava/lang/Boolean;" line-rate="1.0" branch-rate="0.5">
+              <lines>
+                <line number="11" hits="1" branch="false"/>
+                <line number="12" hits="1" branch="false"/>
+                <line number="13" hits="1" branch="true" condition-coverage="50% (1/2)">
+                  <conditions>
+                    <condition number="0" type="jump" coverage="50%"/>
+                  </conditions>
+                </line>
+              </lines>
+            </method>
+            <method name="onCreate" signature="(Landroid/os/Bundle;)V" line-rate="0.0" branch-rate="0.0">
+              <lines>
+                <line number="18" hits="0" branch="false"/>
+                <line number="19" hits="0" branch="false"/>
+                <line number="20" hits="0" branch="false"/>
+              </lines>
+            </method>
+            <method name="onCreateOptionsMenu" signature="(Landroid/view/Menu;)Z" line-rate="0.0" branch-rate="0.0">
+              <lines>
+                <line number="25" hits="0" branch="false"/>
+                <line number="26" hits="0" branch="false"/>
+              </lines>
+            </method>
+            <method name="onOptionsItemSelected" signature="(Landroid/view/MenuItem;)Z" line-rate="0.0" branch-rate="0.0">
+              <lines>
+                <line number="34" hits="0" branch="false"/>
+                <line number="37" hits="0" branch="true" condition-coverage="0% (0/2)">
+                  <conditions>
+                    <condition number="0" type="jump" coverage="0%"/>
+                  </conditions>
+                </line>
+                <line number="38" hits="0" branch="false"/>
+                <line number="41" hits="0" branch="false"/>
+              </lines>
+            </method>
+          </methods>
+          <lines>
+            <line number="8" hits="0" branch="false"/>
+            <line number="11" hits="1" branch="false"/>
+            <line number="12" hits="1" branch="false"/>
+            <line number="13" hits="1" branch="true" condition-coverage="50% (1/2)">
+              <conditions>
+                <condition number="0" type="jump" coverage="50%"/>
+              </conditions>
+            </line>
+            <line number="18" hits="0" branch="false"/>
+            <line number="19" hits="0" branch="false"/>
+            <line number="20" hits="0" branch="false"/>
+            <line number="25" hits="0" branch="false"/>
+            <line number="26" hits="0" branch="false"/>
+            <line number="34" hits="0" branch="false"/>
+            <line number="37" hits="0" branch="true" condition-coverage="0% (0/2)">
+              <conditions>
+                <condition number="0" type="jump" coverage="0%"/>
+              </conditions>
+            </line>
+            <line number="38" hits="0" branch="false"/>
+            <line number="41" hits="0" branch="false"/>
+          </lines>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>

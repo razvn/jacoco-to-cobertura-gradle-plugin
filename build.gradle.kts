@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "1.3.0"
+    alias(libs.plugins.plugin.publish)
 }
 
 group = "net.razvan"
@@ -13,10 +13,17 @@ repositories {
 }
 
 dependencies {
-    implementation("org.simpleframework:simple-xml:2.7.1")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:2.1.0")
-    testImplementation(kotlin("test"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
+    implementation(libs.simple.xml)
+    implementation(libs.bundles.jackson)
+    implementation(libs.kotlin.gradle.plugin)
+
+    runtimeOnly(libs.kotlin.reflection)
+
+    testImplementation(platform(libs.http4k.bom))
+    testImplementation(libs.junit)
+    testImplementation(libs.testing.approval)
+
+    testRuntimeOnly(libs.junit.launcher)
 }
 
 tasks.test {
@@ -42,7 +49,7 @@ gradlePlugin {
             id = "net.razvan.jacoco-to-cobertura"
             displayName = "Converts jacoco xml reports to cobertura"
             description = "This plugin converts jacoco xml reports to cobertura. Make sure the `jacocoTestReport` runs before."
-            tags.set(listOf("jacoco", "cobertura", "report", "converter"))
+            tags = listOf("jacoco", "cobertura", "report", "converter")
             implementationClass = "net.razvan.JacocoToCoberturaPlugin"
         }
     }
