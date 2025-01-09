@@ -87,6 +87,10 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
     }
 
+    companion object {
+        private val DOCTYPE_REGEX = "<!DOCTYPE.[^>]*>".toRegex()
+    }
+
     @TaskAction
     fun convert() {
         val consoleRenderer = ConsoleRenderer()
@@ -140,7 +144,8 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
 
     private fun loadJacocoData(fileIn: File): Jacoco.Report = try {
         val serializer: Serializer = Persister()
-        serializer.read(Jacoco.Report::class.java, fileIn)
+        val data = fileIn.readText().replace(DOCTYPE_REGEX, "")
+        serializer.read(Jacoco.Report::class.java, data)
     } catch (e: Exception) {
         throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
     }

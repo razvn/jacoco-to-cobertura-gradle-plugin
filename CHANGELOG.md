@@ -2,6 +2,9 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v1.3.2
+- fix #11: report.dtd not found
+
 ### v1.3.1
 - Config option `rootPackageToRemove` is optional H/T @eliezio
 
