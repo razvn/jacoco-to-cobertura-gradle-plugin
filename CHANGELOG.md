@@ -7,6 +7,10 @@ This list is not intended to be all-encompassing - it will document major and br
 - Fixed a number of issues with the XML generated that now is DTD compliant
 - Update to gradle version catalogs
 
+
+### v1.3.2
+- fix #11: report.dtd not found
+
 ### v1.3.1
 - Config option `rootPackageToRemove` is optional H/T @eliezio
 
