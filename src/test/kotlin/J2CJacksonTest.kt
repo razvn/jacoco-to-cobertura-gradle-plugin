@@ -65,7 +65,7 @@ class J2CJacksonTest {
 
     @Test
     fun `writeCoberturaData throws exception for read-only directory`() {
-        val readOnlyDir = createTempDir()
+        val readOnlyDir = createTempFile().toFile()
         readOnlyDir.setWritable(false)
         val outputFile = File(readOnlyDir, "output.xml")
         

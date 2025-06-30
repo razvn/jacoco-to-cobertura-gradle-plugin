@@ -1,11 +1,8 @@
 package net.razvan
 
-import net.razvan.models.JacocoModels
 import org.gradle.api.Project
 import org.gradle.testfixtures.ProjectBuilder
-import org.junit.jupiter.api.Assertions.assertEquals
-import org.junit.jupiter.api.Assertions.assertFalse
-import org.junit.jupiter.api.Assertions.assertTrue
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -23,11 +20,12 @@ class JacocoToCoberturaTaskTest {
     @BeforeEach
     fun setup() {
         project = ProjectBuilder.builder().build()
-        task = project.tasks.create("testJacocoToCobertura", JacocoToCoberturaTask::class.java) {
+        val taskProvider = project.tasks.register("testJacocoToCobertura", JacocoToCoberturaTask::class.java) {
             // Set required default values
             splitByPackage.set(false)
             rootPackageToRemove.set("")
         }
+        task = taskProvider.get()
     }
 
     @Test
