@@ -15,7 +15,7 @@ class CoberturaModels {
         var branchRate: Double = 0.0
 
         @field:JacksonXmlProperty(isAttribute = true)
-        var complexity: Double? = 0.0
+        var complexity: Double? = null
 
         fun replaceSlashWithDot(s: String): String = s.replace("/", ".")
     }
@@ -136,9 +136,11 @@ class CoberturaModels {
         }
 
         private fun cleanPackageName(name: String?, rootPackageToRemove: String?): String {
-            val pkg = name ?: ""
-            return (rootPackageToRemove?.let { pkg.removePrefix(it) } ?: pkg).let {
-                val path = it.removePrefix(".").replace(".", "/")
+            val pkg = name?.replace(".", "/") ?: ""
+            val pkgToRemove = rootPackageToRemove?.replace(".", "/") ?: ""
+
+            return pkgToRemove.let { pkg.removePrefix(it) }.let {
+                val path = it.removePrefix(".").removePrefix("/")
                 if (path.isNotEmpty()) "$path/" else ""
             }
         }
@@ -185,12 +187,13 @@ class CoberturaModels {
         var conditions: List<Condition>? = null
 
         init {
-            if (l.mb + l.cb > 0) {
+            val mbcb = l.mb + l.cb
+            if (mbcb > 0) {
                 branch = true
 
-                val percentage = (100 * (l.cb.toDouble() / (l.cb + l.mb))).toInt().toString() + "%"
+                val percentage = (100 * (l.cb.toDouble() / mbcb)).toInt().toString() + "%"
 
-                conditionCoverage = "$percentage (${l.cb}/${l.cb + l.mb})"
+                conditionCoverage = "$percentage (${l.cb}/$mbcb)"
                 conditions = listOf(Condition(percentage))
             }
         }
@@ -221,34 +224,39 @@ class CoberturaModels {
             jSource: String?,
             jName: String?,
         ): List<JacocoModels.Line> {
-            return if (jMethod.line == null || (jSource == null && jName == null)) emptyList()
-            else {
-                val currentMethodLine = jMethod.line ?: 0
-                val sourceLines: List<JacocoModels.Line> = jPack.sourcefiles
-                    .filter { it.name != null }
-                    .filter { it.name == jSource || it.name?.substringBeforeLast(".") == jName }
-                    .flatMap { it.lines }
-                    .filter { it.nr >= currentMethodLine }
+            val methodLine = jMethod.line ?: return emptyList()
+            if (jSource == null && jName == null) return emptyList()
 
-                val packMethods = jPack.classes
-                    .filter { aClass ->
-                        when {
-                            aClass.sourcefilename != null -> aClass.sourcefilename == jSource || aClass.sourcefilename?.substringBeforeLast(
-                                "."
-                            ) == jName
+            val sourceLines: List<JacocoModels.Line> = jPack.sourcefiles
+                .filter { sourceFile ->
+                    sourceFile.name?.let { name ->
+                        name == jSource || name.substringBeforeLast(".") == jName
+                    } == true
+                }
+                .flatMap { it.lines }
+                .filter { it.nr >= methodLine }
 
-                            aClass.name != null -> aClass.name == jSource || aClass.name?.substringAfterLast("/") == jName
-                            else -> false
-                        }
+            val packMethods = jPack.classes
+                .filter { aClass ->
+                    when {
+                        aClass.sourcefilename != null -> aClass.sourcefilename == jSource || aClass.sourcefilename?.substringBeforeLast(
+                            "."
+                        ) == jName
+
+                        aClass.name != null -> aClass.name == jSource || aClass.name?.substringAfterLast("/") == jName
+                        else -> false
                     }
-                    .flatMap { it.methods }
-                    .filter { it.name != null && it.line != null }
-                    .associateBy({ it.name!! }, { it.line!! })
-                    .filterValues { it > currentMethodLine } // on garde que les methodes avec un numero de ligne supperieur
+                }
+                .flatMap { it.methods }
+                .mapNotNull { method ->
+                    val name = method.name
+                    val line = method.line
+                    if (name != null && line != null) name to line else null
+                }.toMap()
+                .filterValues { it > methodLine } // only consider methods that start after the current method line
 
-                val nextMethodLine = packMethods.minByOrNull { it.value }?.value ?: Int.MAX_VALUE
-                sourceLines.filter { it.nr < nextMethodLine }
-            }
+            val nextMethodLine = packMethods.minByOrNull { it.value }?.value ?: Int.MAX_VALUE
+            return sourceLines.filter { it.nr < nextMethodLine }
         }
     }
 }

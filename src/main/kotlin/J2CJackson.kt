@@ -32,14 +32,14 @@ class J2CJackson {
     fun transformData(jacocoData: JacocoModels.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
         CoberturaModels.Coverage(jacocoData, sources, rootPackageToRemove)
     } catch (e: Exception) {
-        throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
+        throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message ?: "unknown error"}`")
     }
 
     fun writeCoberturaData(outputFile: File, data: CoberturaModels.Coverage) = with(outputFile) {
         try {
             writeText(getXmlData(data))
         } catch (e: Exception) {
-            throw JacocoToCoberturaException("Writing Cobertura Data to file `${this.canonicalPath}` error: `${e.message}`")
+            throw JacocoToCoberturaException("Writing Cobertura Data to file `${this.canonicalPath}` error: `${e.message ?: "unknown error"}`")
         }
     }
 

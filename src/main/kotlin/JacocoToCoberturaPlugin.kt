@@ -6,15 +6,7 @@ import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.IgnoreEmptyDirectories
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.internal.logging.ConsoleRenderer
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
@@ -31,6 +23,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
             })
 
             splitByPackage.convention(false)
+            rootPackageToRemove.convention("")
         }
 
         plugins.withType<JacocoPlugin>().configureEach {
@@ -97,11 +90,13 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             }
         val output = outputFile.asFile.get()
             .also {
-                if (!it.parentFile.exists()) {
+                val parentFile = it.parentFile
+                    ?: throw JacocoToCoberturaException("Parent path of file directory `${it.canonicalPath}` is null.")
+                if (!parentFile.exists()) {
                     try {
-                        if (!it.parentFile.mkdirs()) throw JacocoToCoberturaException("`mkdirs()` returned false")
+                        if (!parentFile.mkdirs()) throw JacocoToCoberturaException("`mkdirs()` returned false")
                     } catch (e: Exception) {
-                        throw JacocoToCoberturaException("Output file directory `${it.parentFile.canonicalPath} does not exists and couldn't be created, error: `${e.message}`")
+                        throw JacocoToCoberturaException("Output file directory `${parentFile.canonicalPath}` does not exists and couldn't be created, error: `${e.message ?: "unknown error"}`")
                     }
                 }
             }
@@ -122,39 +117,23 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
 
         if (splitByPackage) {
             jacocoData.packages.forEach { packageElement ->
-                val packageName = packageElement.name?.replace('/', '.')
-                val packageData = jacocoData.copy(packages = listOf(packageElement))
+                val packageName = packageElement.name?.replace('/', '.') ?: ""
+                val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
                 j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
-                logger.lifecycle("Cobertura report for package $packageName generated at ${consoleRenderer.asClickableFileUrl(packageOut)}")
+                logger.lifecycle(
+                    "Cobertura report for package $packageName generated at ${
+                        consoleRenderer.asClickableFileUrl(
+                            packageOut
+                        )
+                    }"
+                )
             }
         } else {
             j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
             logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
         }
     }
-/*
-    private fun loadJacocoData(fileIn: File): JacocoSimpleXML.Report = try {
-        val serializer: Serializer = Persister()
-        serializer.read(JacocoSimpleXML.Report::class.java, fileIn)
-    } catch (e: Exception) {
-        throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
-    }
-
-    private fun transformData(jacocoData: JacocoSimpleXML.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
-        CoberturaSimpleXML.Coverage(jacocoData, sources, rootPackageToRemove)
-    } catch (e: Exception) {
-        throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
-    }
-
-    private fun writeCoberturaData(outputFile: File, data: CoberturaSimpleXML.Coverage) = with(outputFile) {
-        try {
-            Persister(Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>")).write(data, this)
-        } catch (e: Exception) {
-            throw JacocoToCoberturaException("Writing Cobertura Data to file `${this.canonicalPath}` error: `${e.message}`")
-        }
-    }
- */
 }
 
 class JacocoToCoberturaException(msg: String) : Exception(msg)

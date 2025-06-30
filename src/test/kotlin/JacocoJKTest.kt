@@ -85,5 +85,13 @@ class JacocoJKTest {
         val transform = j2c.transformData(sample, emptyList(), null)
         approver.assertApproved(j2c.getXmlData(transform), ContentType.APPLICATION_XML)
     }
+
+    @Test
+    fun `jackson for sample5 generation is valid`(approver: Approver) {
+        val file = File(this.javaClass.classLoader.getResource("jacoco-sample5.xml")!!.toURI().path)
+        val sample = j2c.loadJacocoData(file)
+        val transform = j2c.transformData(sample, emptyList(), null)
+        approver.assertApproved(j2c.getXmlData(transform), ContentType.APPLICATION_XML)
+    }
 }
 
