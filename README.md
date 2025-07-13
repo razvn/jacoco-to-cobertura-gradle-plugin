@@ -1,6 +1,6 @@
 # JacocoToCobertura Gradle Plugin
 
-[![Current release](https://img.shields.io/github/v/release/razvn/jacoco-to-cobertura-gradle-plugin)](https://github.com/razvn/jacoco-to-cobertura-gradle-plugin/releases) [![Gradle Plugin Portal](https://img.shields.io/badge/Gradle-v1.3.2-blue.svg)](https://plugins.gradle.org/plugin/net.razvan.jacoco-to-cobertura)
+[![Current release](https://img.shields.io/github/v/release/razvn/jacoco-to-cobertura-gradle-plugin)](https://github.com/razvn/jacoco-to-cobertura-gradle-plugin/releases) [![Gradle Plugin Portal](https://img.shields.io/badge/Gradle-v2.0.0-blue.svg)](https://plugins.gradle.org/plugin/net.razvan.jacoco-to-cobertura)
 
 This plugin aims to convert the JaCoCo XML report to a Cobertura report for GitLab to use the data for [showing the lines covered by tests in the Merge Request](https://docs.gitlab.com/ee/ci/testing/test_coverage_visualization.html).
 
@@ -74,3 +74,6 @@ tasks.koverXmlReport {
     finalizedBy(tasks.jacocoToCobertura)
 }
 ```
+
+> **Note**
+> Kover report is not full compatible with jacoco xml format, so the results won't be as accurate as jacoco (for example the method line number is missing so we won't be able to link the lines to the method and classes).

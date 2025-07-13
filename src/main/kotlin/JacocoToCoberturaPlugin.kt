@@ -6,24 +6,13 @@ import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.tasks.IgnoreEmptyDirectories
-import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.InputFiles
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.OutputFile
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
-import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.*
 import org.gradle.internal.logging.ConsoleRenderer
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
-import org.simpleframework.xml.Serializer
-import org.simpleframework.xml.core.Persister
-import org.simpleframework.xml.stream.Format
 import java.io.File
 
 class JacocoToCoberturaPlugin : Plugin<Project> {
@@ -34,6 +23,7 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
             })
 
             splitByPackage.convention(false)
+            rootPackageToRemove.convention("")
         }
 
         plugins.withType<JacocoPlugin>().configureEach {
@@ -64,7 +54,6 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 }
 
 abstract class JacocoToCoberturaTask : DefaultTask() {
-    @get:Optional
     @get:InputFile
     abstract val inputFile: RegularFileProperty
 
@@ -87,10 +76,6 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
     }
 
-    companion object {
-        private val DOCTYPE_REGEX = "<!DOCTYPE.[^>]*>".toRegex()
-    }
-
     @TaskAction
     fun convert() {
         val consoleRenderer = ConsoleRenderer()
@@ -105,11 +90,13 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             }
         val output = outputFile.asFile.get()
             .also {
-                if (!it.parentFile.exists()) {
+                val parentFile = it.parentFile
+                    ?: throw JacocoToCoberturaException("Parent path of file directory `${it.canonicalPath}` is null.")
+                if (!parentFile.exists()) {
                     try {
-                        if (!it.parentFile.mkdirs()) throw JacocoToCoberturaException("`mkdirs()` returned false")
+                        if (!parentFile.mkdirs()) throw JacocoToCoberturaException("`mkdirs()` returned false")
                     } catch (e: Exception) {
-                        throw JacocoToCoberturaException("Output file directory `${it.parentFile.canonicalPath} does not exists and couldn't be created, error: `${e.message}`")
+                        throw JacocoToCoberturaException("Output file directory `${parentFile.canonicalPath}` does not exists and couldn't be created, error: `${e.message ?: "unknown error"}`")
                     }
                 }
             }
@@ -125,44 +112,28 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             splitByPackage,
             sourceDirectories.joinToString("\n", "\n")
         )
-
-        val jacocoData = loadJacocoData(input)
+        val j2c = J2CJackson()
+        val jacocoData = j2c.loadJacocoData(input)
 
         if (splitByPackage) {
             jacocoData.packages.forEach { packageElement ->
-                val packageName = packageElement.name?.replace('/', '.')
-                val packageData = jacocoData.copy(packages = listOf(packageElement))
+                val packageName = packageElement.name?.replace('/', '.') ?: ""
+                val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
-                writeCoberturaData(packageOut, transformData(packageData, sourceDirectories, rootPackage))
-                logger.lifecycle("Cobertura report for package $packageName generated at ${consoleRenderer.asClickableFileUrl(packageOut)}")
+                j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
+                logger.lifecycle(
+                    "Cobertura report for package $packageName generated at ${
+                        consoleRenderer.asClickableFileUrl(
+                            packageOut
+                        )
+                    }"
+                )
             }
         } else {
-            writeCoberturaData(output, transformData(jacocoData, sourceDirectories, rootPackage))
+            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
             logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
-        }
-    }
-
-    private fun loadJacocoData(fileIn: File): Jacoco.Report = try {
-        val serializer: Serializer = Persister()
-        val data = fileIn.readText().replace(DOCTYPE_REGEX, "")
-        serializer.read(Jacoco.Report::class.java, data)
-    } catch (e: Exception) {
-        throw JacocoToCoberturaException("Loading Jacoco report error: `${e.message}`")
-    }
-
-    private fun transformData(jacocoData: Jacoco.Report, sources: Collection<String>, rootPackageToRemove: String?) = try {
-        Cobertura.Coverage(jacocoData, sources, rootPackageToRemove)
-    } catch (e: Exception) {
-        throw JacocoToCoberturaException("Transforming Jacoco Data to Cobertura error: `${e.message}`")
-    }
-
-    private fun writeCoberturaData(outputFile: File, data: Cobertura.Coverage) = with(outputFile) {
-        try {
-            Persister(Format("<?xml version=\"1.0\" encoding= \"UTF-8\" ?>")).write(data, this)
-        } catch (e: Exception) {
-            throw JacocoToCoberturaException("Writing Cobertura Data to file `${this.canonicalPath}` error: `${e.message}`")
         }
     }
 }
 
-private class JacocoToCoberturaException(msg: String) : Exception(msg)
+class JacocoToCoberturaException(msg: String) : Exception(msg)

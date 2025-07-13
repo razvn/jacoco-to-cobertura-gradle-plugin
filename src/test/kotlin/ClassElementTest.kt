@@ -1,37 +1,37 @@
-import net.razvan.Cobertura
-import net.razvan.Jacoco
+package net.razvan
+
+import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
-import kotlin.test.assertEquals
 
 class ClassElementTest {
     @Test
     fun `initializes with correct values`() {
-        val jacocoClassElement = Jacoco.ClassElement().apply {
+        val jacocoClassElement = JacocoSimpleXML.ClassElement().apply {
             name = "TestClass"
             sourcefilename = "TestClass.kt"
             counters = listOf(
-                Jacoco.Counter().apply {
+                JacocoSimpleXML.Counter().apply {
                     type = "LINE"
                     missed = 5
                     covered = 10
                 },
-                Jacoco.Counter().apply {
+                JacocoSimpleXML.Counter().apply {
                     type = "COMPLEXITY"
                     missed = 5
                     covered = 7
                 },
-                Jacoco.Counter().apply {
+                JacocoSimpleXML.Counter().apply {
                     type = "BRANCH"
                     missed = 13
                     covered = 11
                 }
             )
         }
-        val jacocoPackageElement = Jacoco.PackageElement().apply {
+        val jacocoPackageElement = JacocoSimpleXML.PackageElement().apply {
             name = "TestPackage"
         }
 
-        val classElement = Cobertura.ClassElement(jacocoClassElement, jacocoPackageElement)
+        val classElement = CoberturaSimpleXML.ClassElement(jacocoClassElement, jacocoPackageElement)
 
         assertEquals("TestClass", classElement.name)
         assertEquals("TestPackage/TestClass.kt", classElement.filename)
@@ -42,10 +42,10 @@ class ClassElementTest {
 
     @Test
     fun `handles null values gracefully`() {
-        val jacocoClassElement = Jacoco.ClassElement()
-        val jacocoPackageElement = Jacoco.PackageElement()
+        val jacocoClassElement = JacocoSimpleXML.ClassElement()
+        val jacocoPackageElement = JacocoSimpleXML.PackageElement()
 
-        val classElement = Cobertura.ClassElement(jacocoClassElement, jacocoPackageElement)
+        val classElement = CoberturaSimpleXML.ClassElement(jacocoClassElement, jacocoPackageElement)
 
         assertEquals("", classElement.name)
         assertEquals("", classElement.filename)
@@ -56,15 +56,15 @@ class ClassElementTest {
 
     @Test
     fun `removes root package prefix from filename`() {
-        val jacocoClassElement = Jacoco.ClassElement().apply {
+        val jacocoClassElement = JacocoSimpleXML.ClassElement().apply {
             name = "TestClass"
             sourcefilename = "TestClass.kt"
         }
-        val jacocoPackageElement = Jacoco.PackageElement().apply {
+        val jacocoPackageElement = JacocoSimpleXML.PackageElement().apply {
             name = "com.example"
         }
 
-        val classElement = Cobertura.ClassElement(jacocoClassElement, jacocoPackageElement, "com.example")
+        val classElement = CoberturaSimpleXML.ClassElement(jacocoClassElement, jacocoPackageElement, "com.example")
 
         assertEquals("TestClass.kt", classElement.filename)
     }
@@ -72,15 +72,15 @@ class ClassElementTest {
 
     @Test
     fun `replaces periods with slashes in filename path`() {
-        val jacocoClassElement = Jacoco.ClassElement().apply {
+        val jacocoClassElement = JacocoSimpleXML.ClassElement().apply {
             name = "TestClass"
             sourcefilename = "TestClass.kt"
         }
-        val jacocoPackageElement = Jacoco.PackageElement().apply {
+        val jacocoPackageElement = JacocoSimpleXML.PackageElement().apply {
             name = "com.example"
         }
 
-        val classElement = Cobertura.ClassElement(jacocoClassElement, jacocoPackageElement, null)
+        val classElement = CoberturaSimpleXML.ClassElement(jacocoClassElement, jacocoPackageElement, null)
 
         assertEquals("com/example/TestClass.kt", classElement.filename)
     }

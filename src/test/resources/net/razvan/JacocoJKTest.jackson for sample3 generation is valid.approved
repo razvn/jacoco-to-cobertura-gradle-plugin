@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<coverage complexity="0.0" timestamp="0" version="1.0" line-rate="1.0" branch-rate="0.0" lines-covered="3" lines-valid="3" branches-covered="0" branches-valid="0">
+  <sources>
+    <source>src/main/kotlin</source>
+  </sources>
+  <packages>
+    <package complexity="0.0" name="example" line-rate="1.0" branch-rate="0.0">
+      <classes>
+        <class complexity="0.0" name="example.HelloWorld" filename="HelloWorld.kt" line-rate="1.0" branch-rate="0.0">
+          <methods>
+            <method name="&lt;init&gt;" signature="()V" line-rate="1.0" branch-rate="0.0">
+              <lines/>
+            </method>
+          </methods>
+          <lines/>
+        </class>
+        <class complexity="0.0" name="example.HelloWorldKt" filename="HelloWorld.kt" line-rate="1.0" branch-rate="0.0">
+          <methods>
+            <method name="foo" signature="()V" line-rate="1.0" branch-rate="0.0">
+              <lines/>
+            </method>
+          </methods>
+          <lines/>
+        </class>
+      </classes>
+    </package>
+  </packages>
+</coverage>
