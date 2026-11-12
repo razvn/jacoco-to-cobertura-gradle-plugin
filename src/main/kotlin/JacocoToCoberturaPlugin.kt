@@ -54,8 +54,10 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
     }
 }
 
+@CacheableTask
 abstract class JacocoToCoberturaTask : DefaultTask() {
     @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
     abstract val inputFile: RegularFileProperty
 
     @get:OutputFile
