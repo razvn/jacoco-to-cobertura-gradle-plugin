@@ -26,22 +26,7 @@ class JacocoJKTest {
         assertNotNull(transform)
         assertNotNull(xmlData)
 
-
-        val samplSX = J2CSimpleXML.loadJacocoData(file)
-        val transformSX = J2CSimpleXML.transformData(samplSX, emptyList(), null)
-        val xmlDataSX = J2CSimpleXML.getXmlData(transformSX)
         j2c.writeCoberturaData(File("cobertura-jackson.xml"), transform)
-        J2CSimpleXML.writeCoberturaData(File("cobertura-simple.xml"), transformSX)
-        assertNotNull(xmlDataSX)
-    }
-
-    @Test
-    // @Disabled
-    fun `generate SampleXML file`() {
-        val file = File(this.javaClass.classLoader.getResource("jacoco-sample2.xml")!!.toURI().path)
-        val samplSX = J2CSimpleXML.loadJacocoData(file)
-        val transformSX = J2CSimpleXML.transformData(samplSX, emptyList(), null)
-        J2CSimpleXML.writeCoberturaData(File("cobertura-simple.xml"), transformSX)
     }
 
     @Test

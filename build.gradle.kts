@@ -19,7 +19,6 @@ dependencies {
     testImplementation(gradleApi())
     testImplementation(gradleKotlinDsl())
 
-    implementation(libs.simple.xml)
     implementation(libs.bundles.jackson)
     implementation(libs.kotlin.gradle.plugin)
 
