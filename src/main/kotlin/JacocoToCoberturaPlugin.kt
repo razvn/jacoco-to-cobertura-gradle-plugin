@@ -8,6 +8,7 @@ import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
 import org.gradle.internal.logging.ConsoleRenderer
+import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -37,12 +38,12 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
                     > Property 'outputLocation' is declared as an output property of Report xml (type
                     TaskGeneratedSingleFileReport) but does not have a task associated with it.
                     */
-                    // inputFile.convention(jacocoTask.reports.xml.outputLocation)
+                    // it.inputFile.convention(jacocoTask.reports.xml.outputLocation)
 
-                    dependsOn(jacocoTask)
-                    inputFile.convention(jacocoTask.reports.xml.outputLocation.locationOnly)
+                    it.dependsOn(jacocoTask)
+                    it.inputFile.convention(jacocoTask.reports.xml.outputLocation.locationOnly)
 
-                    sourceDirectories.from(jacocoTask.sourceDirectories)
+                    it.sourceDirectories.from(jacocoTask.sourceDirectories)
                 }
             }
         }
