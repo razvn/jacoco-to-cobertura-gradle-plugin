@@ -24,6 +24,7 @@ dependencies {
 
     runtimeOnly(libs.kotlin.reflection)
 
+    testImplementation(platform(libs.junit.bom))
     testImplementation(platform(libs.http4k.bom))
     testImplementation(libs.junit)
     testImplementation(libs.testing.approval)
