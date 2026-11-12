@@ -22,8 +22,8 @@ class JacocoToCoberturaTaskTest {
         project = ProjectBuilder.builder().build()
         val taskProvider = project.tasks.register("testJacocoToCobertura", JacocoToCoberturaTask::class.java) {
             // Set required default values
-            splitByPackage.set(false)
-            rootPackageToRemove.set("")
+            it.splitByPackage.set(false)
+            it.rootPackageToRemove.set("")
         }
         task = taskProvider.get()
     }

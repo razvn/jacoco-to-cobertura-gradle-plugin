@@ -2,7 +2,8 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-    `kotlin-dsl`
+    `java-gradle-plugin`
+    alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.plugin.publish)
 }
 
@@ -13,12 +14,17 @@ repositories {
 }
 
 dependencies {
-    implementation(libs.simple.xml)
+    compileOnly(gradleApi())
+    compileOnly(gradleKotlinDsl())
+    testImplementation(gradleApi())
+    testImplementation(gradleKotlinDsl())
+
     implementation(libs.bundles.jackson)
     implementation(libs.kotlin.gradle.plugin)
 
     runtimeOnly(libs.kotlin.reflection)
 
+    testImplementation(platform(libs.junit.bom))
     testImplementation(platform(libs.http4k.bom))
     testImplementation(libs.junit)
     testImplementation(libs.testing.approval)
@@ -31,12 +37,12 @@ tasks.test {
 }
 
 java {
-    sourceCompatibility = JavaVersion.VERSION_11
+    sourceCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.withType<KotlinCompile>().configureEach {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
+        jvmTarget.set(JvmTarget.JVM_21)
     }
 }
 
