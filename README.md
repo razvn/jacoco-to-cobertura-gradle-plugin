@@ -34,7 +34,7 @@ plugins {
 > Due to the way the default values are set, projects that apply either the [JaCoCo plugin](https://docs.gradle.org/userguide/jacoco_plugin.html#jacoco_plugin) or the [JaCoCo Report Aggregation plugin](https://docs.gradle.org/userguide/jacoco_report_aggregation_plugin.html), work without requiring custom configuration of the `inputFile`, `outputFile` and `sourceDirectories` properties.
 
 > **Note**
-> Since 3.0.0, split mode writes each package report as `<package>.xml` inside `splitOutputDirectory`, and also writes the combined report to `outputFile`. Before 3.0.0, each package report was a `<outputFile base>-<package>.xml` file next to `outputFile`. Point GitLab CI at the new paths.
+> Since 3.0.0, split mode writes each package report as `<package>.xml` inside `splitOutputDirectory`, and also writes the combined report to `outputFile`. A package without a name (the default package) gets the file `default.xml`. Before 3.0.0, each package report was a `<outputFile base>-<package>.xml` file next to `outputFile`. Point GitLab CI at the new paths.
 
 Should the default values not work for you, you can configure the task manually. For example:
 ```kotlin

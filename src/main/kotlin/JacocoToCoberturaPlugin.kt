@@ -140,7 +140,9 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             val splitDir = splitDirFor(output).also { it.mkdirs() }
             val packageNames = mutableSetOf<String>()
             jacocoData.packages.forEach { packageElement ->
-                val packageName = packageElement.name?.replace('/', '.') ?: ""
+                // JaCoCo emits an empty package name for classes in the default package;
+                // a bare ".xml" would be a hidden file no CI config can reference
+                val packageName = packageElement.name?.replace('/', '.')?.takeIf { it.isNotBlank() } ?: "default"
                 packageNames += packageName
                 val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
                 val packageOut = File(splitDir, "${packageName}.xml")
