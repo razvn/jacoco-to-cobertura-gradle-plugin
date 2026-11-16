@@ -18,8 +18,8 @@ import java.io.File
 class JacocoToCoberturaPlugin : Plugin<Project> {
     override fun apply(project: Project) = project.run {
         val coberturaTask = tasks.register<JacocoToCoberturaTask>(TASK_NAME) {
-            outputFile.fileProvider(inputFile.map { inputFile ->
-                inputFile.asFile.parentFile.resolve("cobertura-${inputFile.asFile.nameWithoutExtension}.xml")
+            outputFile.fileProvider(inputFile.map { input ->
+                input.asFile.parentFile.resolve("cobertura-${input.asFile.nameWithoutExtension}.xml")
             })
 
             splitByPackage.convention(false)
@@ -83,11 +83,6 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         logger.debug("Converting JaCoCo report to Cobertura")
 
         val input = inputFile.asFile.get()
-            .also {
-                if (!it.exists()) throw JacocoToCoberturaException(
-                    "File `${it.absolutePath}` does not exist"
-                )
-            }
         val output = outputFile.asFile.get()
             .also {
                 val parentFile = it.parentFile
@@ -119,7 +114,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             jacocoData.packages.forEach { packageElement ->
                 val packageName = packageElement.name?.replace('/', '.') ?: ""
                 val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
-                val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
+                val packageOut = File(output.parentFile, "${output.nameWithoutExtension}-${packageName}.xml")
                 j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
                 logger.lifecycle(
                     "Cobertura report for package $packageName generated at ${packageOut.absolutePath}"

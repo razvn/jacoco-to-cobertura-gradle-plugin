@@ -39,11 +39,13 @@ class JacocoToCoberturaTaskTest {
         task.splitByPackage.set(false)
         task.rootPackageToRemove.set("")
 
+        // Gradle itself fails the task on a missing @InputFile before the action runs;
+        // called directly, the action surfaces the failure from report loading instead.
         val exception = assertThrows<JacocoToCoberturaException> {
             task.convert()
         }
 
-        assertTrue(exception.message!!.contains("does not exist"))
+        assertTrue(exception.message!!.contains("Loading Jacoco report error"))
         assertTrue(exception.message!!.contains(nonExistentFile.absolutePath))
     }
 
