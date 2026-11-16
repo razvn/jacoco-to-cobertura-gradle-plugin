@@ -2,6 +2,14 @@
 
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
+### v3.0.0
+- Split mode [Breaking]: per-package reports are now written as `<package>.xml` inside a `<output file base>-packages/` directory next to the output file. Before, each report sat next to the output file as `<output file base>-<package>.xml`. Point GitLab CI at the new paths.
+- When `splitByPackage` is on, the combined report is also written to `outputFile`, so the task can be up-to-date and use the build cache. Package files left behind by earlier runs are removed.
+- Requires Gradle 9 or newer, running on JDK 21 or newer (the plugin ships Java 21 bytecode)
+- Removed the legacy SimpleXML implementation; all conversion uses Jackson
+- The plugin no longer adds the Kotlin Gradle plugin to consumers' build classpath
+- Dependency updates: Gradle 9.9.1, plugin-publish 2.2.1, Kotlin 2.4.21, Jackson 2.23, JUnit 6
+
 ### v2.0.0
 - Replace XML library with Jackson for better performance(?) and maintainability
 - Fixed a number of issues with the XML generated that now is DTD compliant
