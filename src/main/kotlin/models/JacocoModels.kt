@@ -11,9 +11,6 @@ class JacocoModels {
     interface Counters {
         var counters: List<Counter>
 
-        // Each implementing class should override this with lazy caching
-        fun getCounterMap(): Map<String, Counter> = counters.associateBy { it.type.orEmpty() }
-
         fun branchRate(): Double = counter(BRANCH, counters)
         fun lineRate(): Double = counter(LINE, counters)
         fun complexity(): Double = counter(COMPLEXITY, counters, Companion::sum)
@@ -49,9 +46,6 @@ class JacocoModels {
         @set:JsonProperty("package", required = false)
         var packagesReport: List<PackageElement> = mutableListOf()
     ) : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         val packages: List<PackageElement>
             get() = if (packagesReport.isNotEmpty()) packagesReport else groups.flatMap { g ->
                 val groupPrefix = (g.name?.let { "$it/" } ?: "")
@@ -79,8 +73,6 @@ class JacocoModels {
 
         fun timestamp(): Long = sessionInfos.firstOrNull()?.start?.toLongOrNull()?.let { it / 1000 } ?: 0
 
-        fun packagesNames() = packages.mapNotNull(PackageElement::name).toSet()
-
         fun sources() = packages.asSequence()
             .flatMap { p ->
                p.sourcefiles.asSequence()
@@ -93,9 +85,6 @@ class JacocoModels {
         @set:JsonProperty("package", required = false)
         var packages: List<PackageElement> = mutableListOf()
     ) : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         @field:JacksonXmlProperty(isAttribute = true)
         var name: String? = null
 
@@ -117,9 +106,6 @@ class JacocoModels {
 
     @JacksonXmlRootElement(localName = "package")
     class PackageElement : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         @field:JacksonXmlProperty(isAttribute = true)
         var name: String? = null
 
@@ -135,9 +121,6 @@ class JacocoModels {
 
     @JacksonXmlRootElement(localName = "sourcefile")
     class SourceFile : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         @field:JacksonXmlProperty(isAttribute = true)
         var name: String? = null
 
@@ -168,9 +151,6 @@ class JacocoModels {
 
     @JacksonXmlRootElement(localName = "class")
     class ClassElement : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         @field:JacksonXmlProperty(isAttribute = true)
         var name: String? = null
 
@@ -186,9 +166,6 @@ class JacocoModels {
 
     @JacksonXmlRootElement(localName = "method")
     class MethodElement : Counters {
-        private val counter by lazy { counters.associateBy { it.type ?: "" } }
-        override fun getCounterMap(): Map<String, Counter> = counter
-
         @field:JacksonXmlProperty(isAttribute = true)
         var name: String? = null
 
