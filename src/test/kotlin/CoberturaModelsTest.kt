@@ -166,62 +166,107 @@ class CoberturaModelsTest {
     }
 
     @Test
-    fun `linesForMethod returns empty for null method line`() {
-        val method = JacocoModels.MethodElement().apply { 
-            line = null
-            name = "testMethod"
-        }
-        val packageElement = JacocoModels.PackageElement()
-        
-        val result = CoberturaModels.linesForMethod(method, packageElement, "Test.java", "Test")
-        
-        assertTrue(result.isEmpty())
+    fun `duplicate method names across classes collapse with last one winning`() {
+        val pack = packageWith(
+            classes = listOf(
+                javaClass("com/example/Foo", "Foo.java", listOf(method("init", 12))),
+                javaClass("com/example/FooHelper", "Foo.java", listOf(method("init", 15))),
+                javaClass("com/example/FooOwner", "Foo.java", listOf(method("run", 10)))
+            ),
+            sourcefiles = listOf(sourceFile("Foo.java", 10..20))
+        )
+
+        // init collapses to line 15 (the later class wins), so run@10 runs up to 14;
+        // first-wins or no collapse would truncate at 12
+        assertEquals((10..14).toList(), numbers(pack.classes[2], "run"))
     }
 
     @Test
-    fun `linesForMethod returns empty when both jSource and jName are null`() {
-        val method = JacocoModels.MethodElement().apply { 
-            line = 10
-            name = "testMethod"
-        }
-        val packageElement = JacocoModels.PackageElement()
-        
-        val result = CoberturaModels.linesForMethod(method, packageElement, null, null)
-        
-        assertTrue(result.isEmpty())
+    fun `two methods starting on the same line do not truncate each other`() {
+        val pack = packageWith(
+            classes = listOf(
+                javaClass("com/example/Foo", "Foo.java", listOf(method("a", 10), method("b", 10), method("c", 20)))
+            ),
+            sourcefiles = listOf(sourceFile("Foo.java", 10..25))
+        )
+
+        assertEquals((10..19).toList(), numbers(pack.classes[0], "a"))
+        assertEquals((10..19).toList(), numbers(pack.classes[0], "b"))
+        assertEquals((20..25).toList(), numbers(pack.classes[0], "c"))
     }
 
     @Test
-    fun `linesForMethod filters source files by name correctly`() {
-        val sourceFile1 = JacocoModels.SourceFile().apply {
-            name = "Test.java"
-            lines = listOf(
-                JacocoModels.Line().apply { nr = 15 },
-                JacocoModels.Line().apply { nr = 20 }
-            )
-        }
-        val sourceFile2 = JacocoModels.SourceFile().apply {
-            name = "Other.java"
-            lines = listOf(
-                JacocoModels.Line().apply { nr = 25 }
-            )
-        }
-        
-        val method = JacocoModels.MethodElement().apply { 
-            line = 10
-            name = "testMethod"
-        }
-        val packageElement = JacocoModels.PackageElement().apply {
-            sourcefiles = listOf(sourceFile1, sourceFile2)
-        }
-        
-        val result = CoberturaModels.linesForMethod(method, packageElement, "Test.java", "Test")
-        
-        assertEquals(2, result.size)
-        assertTrue(result.all { it.nr >= 10 })
-        assertTrue(result.any { it.nr == 15 })
-        assertTrue(result.any { it.nr == 20 })
+    fun `method from another class in the same sourcefile truncates the boundary`() {
+        val pack = packageWith(
+            classes = listOf(
+                javaClass("com/example/Foo", "Foo.java", listOf(method("run", 10))),
+                javaClass("com/example/Bar", "Foo.java", listOf(method("stop", 13)))
+            ),
+            sourcefiles = listOf(sourceFile("Foo.java", 10..20))
+        )
+
+        assertEquals(listOf(10, 11, 12), numbers(pack.classes[0], "run"))
     }
+
+    @Test
+    fun `method with null line yields empty lines`() {
+        val pack = packageWith(
+            classes = listOf(
+                javaClass("com/example/Foo", "Foo.java", listOf(method("run", 10), method("gap", null)))
+            ),
+            sourcefiles = listOf(sourceFile("Foo.java", 10..15))
+        )
+
+        assertTrue(numbers(pack.classes[0], "gap").isEmpty())
+        assertEquals((10..15).toList(), numbers(pack.classes[0], "run"))
+    }
+
+    @Test
+    fun `class with neither sourcefilename nor name yields empty lines`() {
+        val pack = packageWith(
+            classes = listOf(javaClass(null, null, listOf(method("run", 10)))),
+            sourcefiles = listOf(sourceFile("Foo.java", 10..15))
+        )
+
+        assertTrue(numbers(pack.classes[0], "run").isEmpty())
+    }
+
+    private fun packageWith(
+        classes: List<JacocoModels.ClassElement>,
+        sourcefiles: List<JacocoModels.SourceFile>
+    ): CoberturaModels.Package =
+        CoberturaModels.Package(
+            JacocoModels.PackageElement().apply {
+                name = "com/example"
+                this.classes = classes
+                this.sourcefiles = sourcefiles
+            }
+        )
+
+    private fun javaClass(
+        name: String?,
+        sourcefilename: String?,
+        methods: List<JacocoModels.MethodElement>
+    ): JacocoModels.ClassElement = JacocoModels.ClassElement().apply {
+        this.name = name
+        this.sourcefilename = sourcefilename
+        this.methods = methods
+    }
+
+    private fun method(name: String, line: Int?): JacocoModels.MethodElement =
+        JacocoModels.MethodElement().apply {
+            this.name = name
+            this.line = line
+        }
+
+    private fun sourceFile(name: String, nrs: IntRange): JacocoModels.SourceFile =
+        JacocoModels.SourceFile().apply {
+            this.name = name
+            lines = nrs.map { nr -> JacocoModels.Line().apply { this.nr = nr } }
+        }
+
+    private fun numbers(owner: CoberturaModels.ClassElement, methodName: String): List<Int> =
+        owner.methods.filter { it.name == methodName }.flatMap { it.lines.map { line -> line.number } }
 
     @Test
     fun `Line constructor handles branch detection correctly`() {
