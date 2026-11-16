@@ -220,6 +220,36 @@ class JacocoToCoberturaTaskTest {
     }
 
     @Test
+    fun `split mode honors an explicit splitOutputDirectory`() {
+        val inputFile = File(tempDir, "input.xml")
+        inputFile.writeText("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <report name="test">
+                <sessioninfo id="session" start="1000000" dump="1000001"/>
+                <package name="com/example/package1">
+                    <counter type="LINE" missed="0" covered="1"/>
+                </package>
+                <counter type="LINE" missed="0" covered="1"/>
+            </report>
+        """.trimIndent())
+
+        val outputFile = File(tempDir, "output.xml")
+        val customDir = File(tempDir, "custom/reports/dir")
+
+        task.inputFile.set(inputFile)
+        task.outputFile.set(outputFile)
+        task.sourceDirectories.setFrom(emptyList<File>())
+        task.splitByPackage.set(true)
+        task.rootPackageToRemove.set("")
+        task.splitOutputDirectory.set(customDir)
+
+        task.convert()
+
+        assertTrue(File(customDir, "com.example.package1.xml").exists())
+        assertFalse(File(tempDir, "output-packages/com.example.package1.xml").exists())
+    }
+
+    @Test
     fun `split mode removes stale package files from the split directory`() {
         val inputFile = File(tempDir, "input.xml")
         inputFile.writeText("""

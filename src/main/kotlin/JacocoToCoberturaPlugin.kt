@@ -135,9 +135,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         val jacocoData = j2c.loadJacocoData(input)
 
         if (splitByPackage) {
-            // splitOutputDirectory cannot be queried here: its convention maps this task's own
-            // outputFile, and Gradle only resolves that after the task completes
-            val splitDir = splitDirFor(output).also { it.mkdirs() }
+            val splitDir = splitOutputDirectory.get().asFile.also { it.mkdirs() }
             val packageNames = mutableSetOf<String>()
             jacocoData.packages.forEach { packageElement ->
                 // JaCoCo emits an empty package name for classes in the default package;
