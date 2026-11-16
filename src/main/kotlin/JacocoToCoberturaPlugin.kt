@@ -27,7 +27,9 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
         }
 
         plugins.withType<JacocoPlugin>().configureEach {
-            tasks.withType<JacocoReport>().singleOrNull()?.let { jacocoTask ->
+            val jacocoReportTasks = tasks.withType<JacocoReport>()
+            val jacocoTask = jacocoReportTasks.singleOrNull()
+            if (jacocoTask != null) {
                 coberturaTask.configure {
                     /*
                     We'd like to use the following to set up the task dependency at the same time as
@@ -44,6 +46,11 @@ class JacocoToCoberturaPlugin : Plugin<Project> {
 
                     it.sourceDirectories.from(jacocoTask.sourceDirectories)
                 }
+            } else if (jacocoReportTasks.any()) {
+                logger.warn(
+                    "Multiple jacoco XML report tasks found; skipping auto-configuration of $TASK_NAME. " +
+                        "Configure its inputFile and sourceDirectories manually."
+                )
             }
         }
     }
