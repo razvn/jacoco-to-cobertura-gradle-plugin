@@ -11,7 +11,6 @@ jackson-databind = { group = "com.fasterxml.jackson.core", name= "jackson-databi
 jackson-dataformat = { group = "com.fasterxml.jackson.dataformat", name= "jackson-dataformat-xml", version.ref = "jackson" }
 jackson-kotlin = { group = "com.fasterxml.jackson.module", name= "jackson-module-kotlin", version.ref = "jackson" }
 woodstox = { module = "com.fasterxml.woodstox:woodstox-core", version.ref = "woodstox" }
-kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-reflection = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 junit = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref="junit" }
 junit-bom = { group = "org.junit", name = "junit-bom", version.ref="junit" }

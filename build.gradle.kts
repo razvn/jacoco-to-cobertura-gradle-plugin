@@ -20,7 +20,6 @@ dependencies {
     testImplementation(gradleKotlinDsl())
 
     implementation(libs.bundles.jackson)
-    implementation(libs.kotlin.gradle.plugin)
 
     runtimeOnly(libs.kotlin.reflection)
 

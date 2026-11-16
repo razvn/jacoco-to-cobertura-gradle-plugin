@@ -4,6 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlRootElement
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlText
+import java.util.TreeSet
 
 class CoberturaModels {
 
@@ -98,16 +99,11 @@ class CoberturaModels {
             )
         }"
 
+        private val lineIndex = MethodLineIndex(jPack, c.sourcefilename, c.name?.substringAfterLast("/"))
+
         @JacksonXmlElementWrapper(useWrapping = true, localName = "methods")
         @field:JacksonXmlProperty(localName = "method")
-        val methods: List<Method> = c.methods.map {
-            Method(
-                m = it,
-                jSource = c.sourcefilename,
-                jName = c.name?.substringAfterLast("/"),
-                jPack = jPack
-            )
-        }
+        val methods: List<Method> = c.methods.map { Method(it, lineIndex) }
 
         @JacksonXmlElementWrapper(useWrapping = true, localName = "lines")
         @field:JacksonXmlProperty(localName = "line")
@@ -147,7 +143,7 @@ class CoberturaModels {
     }
 
     @JacksonXmlRootElement(localName = "method")
-    class Method(m: JacocoModels.MethodElement, jSource: String?, jName: String?, jPack: JacocoModels.PackageElement) :
+    class Method internal constructor(m: JacocoModels.MethodElement, index: MethodLineIndex) :
         Counters() {
         @field:JacksonXmlProperty(isAttribute = true)
         val name: String = m.name ?: ""
@@ -157,8 +153,7 @@ class CoberturaModels {
 
         @JacksonXmlElementWrapper(useWrapping = true, localName = "lines")
         @field:JacksonXmlProperty(localName = "line")
-        val lines: List<Line> =
-            linesForMethod(jMethod = m, jPack = jPack, jSource = jSource, jName = jName).map { Line(it) }
+        val lines: List<Line> = index.linesFor(m.line).map { Line(it) }
 
         init {
             lineRate = m.lineRate()
@@ -217,47 +212,62 @@ class CoberturaModels {
         val value: String = s
     }
 
-    companion object {
-        fun linesForMethod(
-            jMethod: JacocoModels.MethodElement,
-            jPack: JacocoModels.PackageElement,
-            jSource: String?,
-            jName: String?,
-        ): List<JacocoModels.Line> {
-            val methodLine = jMethod.line ?: return emptyList()
-            if (jSource == null && jName == null) return emptyList()
+}
 
-            val sourceLines: List<JacocoModels.Line> = jPack.sourcefiles
-                .filter { sourceFile ->
-                    sourceFile.name?.let { name ->
-                        name == jSource || name.substringBeforeLast(".") == jName
-                    } == true
+// Built once per Cobertura ClassElement: its (jSource, jName) context is a per-class constant,
+// only the queried method line varies. The predicates and the toMap collapse below reproduce
+// the previous per-method scan exactly, quirk for quirk.
+internal class MethodLineIndex(
+    jPack: JacocoModels.PackageElement,
+    jSource: String?,
+    jName: String?,
+) {
+    private val lineRuns: List<List<JacocoModels.Line>> =
+        jPack.sourcefiles
+            .filter { it.name?.let { name -> name == jSource || name.substringBeforeLast(".") == jName } == true }
+            .map { it.lines.sortedBy { line -> line.nr } }
+
+    private val starts: TreeSet<Int> =
+        jPack.classes
+            .filter { aClass ->
+                when {
+                    aClass.sourcefilename != null -> aClass.sourcefilename == jSource || aClass.sourcefilename?.substringBeforeLast(
+                        "."
+                    ) == jName
+
+                    aClass.name != null -> aClass.name == jSource || aClass.name?.substringAfterLast("/") == jName
+                    else -> false
                 }
-                .flatMap { it.lines }
-                .filter { it.nr >= methodLine }
+            }
+            .flatMap { it.methods }
+            .mapNotNull { method ->
+                val name = method.name
+                val line = method.line
+                if (name != null && line != null) name to line else null
+            }
+            .toMap() // later duplicate method names overwrite — pinned semantics, not a bug
+            .values.toCollection(TreeSet())
 
-            val packMethods = jPack.classes
-                .filter { aClass ->
-                    when {
-                        aClass.sourcefilename != null -> aClass.sourcefilename == jSource || aClass.sourcefilename?.substringBeforeLast(
-                            "."
-                        ) == jName
+    private val noContext = jSource == null && jName == null
 
-                        aClass.name != null -> aClass.name == jSource || aClass.name?.substringAfterLast("/") == jName
-                        else -> false
-                    }
-                }
-                .flatMap { it.methods }
-                .mapNotNull { method ->
-                    val name = method.name
-                    val line = method.line
-                    if (name != null && line != null) name to line else null
-                }.toMap()
-                .filterValues { it > methodLine } // only consider methods that start after the current method line
-
-            val nextMethodLine = packMethods.minByOrNull { it.value }?.value ?: Int.MAX_VALUE
-            return sourceLines.filter { it.nr < nextMethodLine }
+    fun linesFor(methodLine: Int?): List<JacocoModels.Line> {
+        if (methodLine == null || noContext) return emptyList()
+        val next = starts.higher(methodLine) ?: Int.MAX_VALUE
+        return lineRuns.flatMap { run ->
+            val from = run.lowerBound(methodLine)
+            val to = run.lowerBound(next)
+            if (from < to) run.subList(from, to) else emptyList()
         }
+    }
+
+    private fun List<JacocoModels.Line>.lowerBound(nr: Int): Int {
+        var lo = 0
+        var hi = size
+        while (lo < hi) {
+            val mid = (lo + hi) / 2
+            if (this[mid].nr < nr) lo = mid + 1 else hi = mid
+        }
+        return lo
     }
 }
 
