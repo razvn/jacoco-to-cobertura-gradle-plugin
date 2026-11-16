@@ -26,22 +26,7 @@ class JacocoJKTest {
         assertNotNull(transform)
         assertNotNull(xmlData)
 
-
-        val samplSX = J2CSimpleXML.loadJacocoData(file)
-        val transformSX = J2CSimpleXML.transformData(samplSX, emptyList(), null)
-        val xmlDataSX = J2CSimpleXML.getXmlData(transformSX)
         j2c.writeCoberturaData(File("cobertura-jackson.xml"), transform)
-        J2CSimpleXML.writeCoberturaData(File("cobertura-simple.xml"), transformSX)
-        assertNotNull(xmlDataSX)
-    }
-
-    @Test
-    // @Disabled
-    fun `generate SampleXML file`() {
-        val file = File(this.javaClass.classLoader.getResource("jacoco-sample2.xml")!!.toURI().path)
-        val samplSX = J2CSimpleXML.loadJacocoData(file)
-        val transformSX = J2CSimpleXML.transformData(samplSX, emptyList(), null)
-        J2CSimpleXML.writeCoberturaData(File("cobertura-simple.xml"), transformSX)
     }
 
     @Test
@@ -87,7 +72,6 @@ class JacocoJKTest {
     }
 
     @Test
-    @Disabled("This test is disabled because it requires a specific Jacoco XML file that may not be available.")
     fun `jackson for sample5 generation is valid`(approver: Approver) {
         val file = File(this.javaClass.classLoader.getResource("jacoco-sample5.xml")!!.toURI().path)
         val sample = j2c.loadJacocoData(file)

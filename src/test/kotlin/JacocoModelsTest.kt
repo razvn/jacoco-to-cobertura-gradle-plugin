@@ -85,30 +85,6 @@ class JacocoModelsTest {
     }
 
     @Test
-    fun `getCounterMap handles null types with orEmpty`() {
-        val element = JacocoModels.Report().apply {
-            counters = listOf(
-                JacocoModels.Counter().apply { 
-                    type = null
-                    covered = 1
-                    missed = 1 
-                },
-                JacocoModels.Counter().apply { 
-                    type = "BRANCH"
-                    covered = 2
-                    missed = 2 
-                }
-            )
-        }
-        
-        val counterMap = element.getCounterMap()
-        
-        assertTrue(counterMap.containsKey(""))  // null becomes empty string
-        assertTrue(counterMap.containsKey("BRANCH"))
-        assertEquals(2, counterMap.size)
-    }
-
-    @Test
     fun `counterCoveredValue returns zero for missing counter type`() {
         val counters = listOf(
             JacocoModels.Counter().apply { 

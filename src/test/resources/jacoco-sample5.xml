@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE report PUBLIC "-//JACOCO//DTD Report 1.1//EN" "report.dtd">
+<report name="grouped-example">
+    <sessioninfo id="synthetic" start="1000" dump="2000"/>
+    <group name="first-module">
+        <package name="example">
+            <class name="example/First" sourcefilename="First.java">
+                <method name="run" desc="()V" line="5">
+                    <counter type="LINE" missed="0" covered="1"/>
+                </method>
+                <counter type="LINE" missed="0" covered="1"/>
+            </class>
+            <sourcefile name="First.java">
+                <line nr="5" mi="0" ci="1" mb="0" cb="0"/>
+                <counter type="LINE" missed="0" covered="1"/>
+            </sourcefile>
+            <counter type="LINE" missed="0" covered="1"/>
+        </package>
+        <counter type="LINE" missed="0" covered="1"/>
+    </group>
+    <group name="second-module">
+        <package name="example">
+            <class name="example/Second" sourcefilename="Second.java">
+                <method name="run" desc="()V" line="7">
+                    <counter type="LINE" missed="1" covered="0"/>
+                </method>
+                <counter type="LINE" missed="1" covered="0"/>
+            </class>
+            <sourcefile name="Second.java">
+                <line nr="7" mi="1" ci="0" mb="0" cb="0"/>
+                <counter type="LINE" missed="1" covered="0"/>
+            </sourcefile>
+            <counter type="LINE" missed="1" covered="0"/>
+        </package>
+        <counter type="LINE" missed="1" covered="0"/>
+    </group>
+    <counter type="LINE" missed="1" covered="1"/>
+</report>

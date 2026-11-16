@@ -123,3 +123,8 @@ build/kotlin/sessions/
 
 .env
 .idea/sonarlint
+
+# Local artifacts
+.DS_Store
+cobertura-*.xml
+run-claude.sh
