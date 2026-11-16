@@ -16,6 +16,10 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
+import java.nio.file.Files
+import java.nio.file.LinkOption.NOFOLLOW_LINKS
+import java.nio.file.StandardCopyOption.ATOMIC_MOVE
+import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 import javax.inject.Inject
 
 class JacocoToCoberturaPlugin : Plugin<Project> {
@@ -80,6 +84,11 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     @get:InputFiles
     abstract val sourceDirectories: ConfigurableFileCollection
 
+    // Cobertura embeds these absolute paths even when source files have identical relative fingerprints.
+    @get:Input
+    val sourcePaths: List<String>
+        get() = sourceDirectories.files.map { it.absolutePath }
+
     @get:Input
     abstract val splitByPackage: Property<Boolean>
 
@@ -120,7 +129,7 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
                 }
             }
 
-        val sourceDirectories = sourceDirectories.files.map { it.absolutePath }
+        val sourcePaths = sourcePaths
         val splitByPackage = splitByPackage.getOrElse(false)
         val rootPackage = rootPackageToRemove.getOrElse("").takeIf { it.isNotBlank() }
 
@@ -129,35 +138,95 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
             input,
             output,
             splitByPackage,
-            sourceDirectories.joinToString("\n", "\n")
+            sourcePaths.joinToString("\n", "\n")
         )
         val j2c = J2CJackson()
         val jacocoData = j2c.loadJacocoData(input)
 
         if (splitByPackage) {
-            val splitDir = splitOutputDirectory.get().asFile.also { it.mkdirs() }
-            val packageNames = mutableSetOf<String>()
-            jacocoData.packages.forEach { packageElement ->
-                // JaCoCo emits an empty package name for classes in the default package;
-                // a bare ".xml" would be a hidden file no CI config can reference
-                val packageName = packageElement.name?.replace('/', '.')?.takeIf { it.isNotBlank() } ?: "default"
-                packageNames += packageName
+            val splitDir = splitOutputDirectory.get().asFile
+            Files.createDirectories(splitDir.toPath())
+            val manifest = splitDir.resolve(".cobertura-generated-files")
+            val reservedPaths = setOf(input.canonicalFile, output.canonicalFile)
+            if (manifest.canonicalFile in reservedPaths) {
+                throw JacocoToCoberturaException("Split report manifest conflicts with an input or output file: ${manifest.absolutePath}")
+            }
+            val previousNames = readSplitManifest(manifest)
+            val reports = jacocoData.packages.map { packageElement ->
+                val packageName = packageElement.name?.replace('/', '.')?.takeIf { it.isNotBlank() }
+                // '[' is forbidden in JVM package names, so this filename is reserved for the unnamed package.
+                val unnamedPackageFile = "[default].xml"
+                val fileName = packageName?.let { "$it.xml" } ?: unnamedPackageFile
+                if (!isSplitReportName(fileName) ||
+                    (packageName != null && fileName.equals(unnamedPackageFile, ignoreCase = true))
+                ) {
+                    throw JacocoToCoberturaException("Invalid split report filename: $fileName")
+                }
+                val file = splitDir.resolve(fileName)
+                val path = file.toPath()
+                if (file.canonicalFile in reservedPaths ||
+                    (Files.exists(path, NOFOLLOW_LINKS) &&
+                        (fileName !in previousNames || !Files.isRegularFile(path, NOFOLLOW_LINKS)))
+                ) {
+                    throw JacocoToCoberturaException("Split report conflicts with an existing file or configured path: ${file.absolutePath}")
+                }
+                file to packageElement
+            }
+            val currentNames = reports.map { (file, _) -> file.name }.toSet()
+
+            // Record new destinations before writing so a failed conversion can retry its partial outputs.
+            if (!Files.exists(manifest.toPath()) || !previousNames.containsAll(currentNames)) {
+                writeSplitManifest(manifest, previousNames + currentNames)
+            }
+            reports.forEach { (packageOut, packageElement) ->
                 val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
-                val packageOut = File(splitDir, "${packageName}.xml")
-                j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
+                j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourcePaths, rootPackage))
                 logger.lifecycle(
-                    "Cobertura report for package $packageName generated at ${packageOut.absolutePath}"
+                    "Cobertura report for package ${packageOut.nameWithoutExtension} generated at ${packageOut.absolutePath}"
                 )
             }
-            // Gradle does not prune untracked files inside an @OutputDirectory, so a package
-            // that disappeared from the report would otherwise leave a stale report behind
-            splitDir.listFiles { file -> file.isFile && file.name.endsWith(".xml") && file.name.removeSuffix(".xml") !in packageNames }
-                ?.forEach { it.delete() }
-            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
-            logger.lifecycle("Cobertura report generated at ${output.absolutePath}")
+
+            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourcePaths, rootPackage))
+            val staleNames = previousNames - currentNames
+            staleNames.forEach { name ->
+                val file = splitDir.resolve(name)
+                if (file.canonicalFile !in reservedPaths && Files.isRegularFile(file.toPath(), NOFOLLOW_LINKS)) {
+                    Files.deleteIfExists(file.toPath())
+                }
+            }
+            if (staleNames.isNotEmpty()) {
+                writeSplitManifest(manifest, currentNames)
+            }
         } else {
-            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
-            logger.lifecycle("Cobertura report generated at ${output.absolutePath}")
+            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourcePaths, rootPackage))
+        }
+        logger.lifecycle("Cobertura report generated at ${output.absolutePath}")
+    }
+
+    private fun isSplitReportName(name: String): Boolean =
+        name.length > 4 && name.endsWith(".xml") &&
+            name.none { it == '/' || it == '\\' || it == ':' || it.isISOControl() }
+
+    private fun readSplitManifest(manifest: File): Set<String> {
+        val path = manifest.toPath()
+        if (!Files.exists(path, NOFOLLOW_LINKS)) return emptySet()
+        if (!Files.isRegularFile(path, NOFOLLOW_LINKS)) {
+            throw JacocoToCoberturaException("Split report manifest is not a regular file: ${manifest.absolutePath}")
+        }
+        val names = manifest.readLines().toSet()
+        if (!names.all(::isSplitReportName)) {
+            throw JacocoToCoberturaException("Invalid filename in split report manifest: ${manifest.absolutePath}")
+        }
+        return names
+    }
+
+    private fun writeSplitManifest(manifest: File, names: Set<String>) {
+        val temp = Files.createTempFile(manifest.parentFile.toPath(), manifest.name, ".tmp")
+        try {
+            Files.write(temp, names.sorted())
+            Files.move(temp, manifest.toPath(), ATOMIC_MOVE, REPLACE_EXISTING)
+        } finally {
+            Files.deleteIfExists(temp)
         }
     }
 }

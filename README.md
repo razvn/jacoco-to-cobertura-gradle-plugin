@@ -27,14 +27,16 @@ plugins {
 | `outputFile`           | Cobertura XML file to generate                             | `cobertura-${inputFile.nameWithoutExtension}.xml` in the directory of `inputFile` |
 | `sourceDirectories`    | Directories containing source files the JaCoCo report used | Source directories of single `JacocoReport` task found in the project; must be specified manually if zero or more than one `JacocoReport` tasks exist |
 | `splitByPackage`       | Whether to generate one Cobertura report per package, written into `splitOutputDirectory` (the combined report still goes to `outputFile`) | `false` |
-| `splitOutputDirectory` | Directory that receives the per-package reports when `splitByPackage` is on | `<outputFile base>-packages/` next to `outputFile` |
+| `splitOutputDirectory` | Dedicated directory for this task's per-package reports when `splitByPackage` is on | `<outputFile base>-packages/` next to `outputFile` |
 | `rootPackageToRemove`  | Root package to remove from the begging of filenames       | `` |
 
 > **Note**
 > Due to the way the default values are set, projects that apply either the [JaCoCo plugin](https://docs.gradle.org/userguide/jacoco_plugin.html#jacoco_plugin) or the [JaCoCo Report Aggregation plugin](https://docs.gradle.org/userguide/jacoco_report_aggregation_plugin.html), work without requiring custom configuration of the `inputFile`, `outputFile` and `sourceDirectories` properties.
 
 > **Note**
-> Since 3.0.0, split mode writes each package report as `<package>.xml` inside `splitOutputDirectory`, and also writes the combined report to `outputFile`. A package without a name (the default package) gets the file `default.xml`. Before 3.0.0, each package report was a `<outputFile base>-<package>.xml` file next to `outputFile`. Point GitLab CI at the new paths.
+> Since 3.0.0, split mode writes each named package report as `<package>.xml` inside `splitOutputDirectory`, and also writes the combined report to `outputFile`. The unnamed package gets `[default].xml`. A package named `default` gets `default.xml`. Before 3.0.0, each package report was a `<outputFile base>-<package>.xml` file next to `outputFile`. Point GitLab CI at the new paths.
+>
+> The split directory contains a `.cobertura-generated-files` manifest used to identify stale reports. If you previously generated split reports without a manifest, move them out of the directory or choose a fresh directory before rerunning the task.
 
 Should the default values not work for you, you can configure the task manually. For example:
 ```kotlin
