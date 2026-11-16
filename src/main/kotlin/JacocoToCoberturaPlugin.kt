@@ -7,7 +7,6 @@ import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
-import org.gradle.internal.logging.ConsoleRenderer
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
@@ -81,8 +80,6 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
 
     @TaskAction
     fun convert() {
-        val consoleRenderer = ConsoleRenderer()
-
         logger.debug("Converting JaCoCo report to Cobertura")
 
         val input = inputFile.asFile.get()
@@ -125,16 +122,12 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
                 val packageOut = File(output.absolutePath.replace(".xml", "-${packageName}.xml"))
                 j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
                 logger.lifecycle(
-                    "Cobertura report for package $packageName generated at ${
-                        consoleRenderer.asClickableFileUrl(
-                            packageOut
-                        )
-                    }"
+                    "Cobertura report for package $packageName generated at ${packageOut.absolutePath}"
                 )
             }
         } else {
             j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
-            logger.lifecycle("Cobertura report generated at ${consoleRenderer.asClickableFileUrl(output)}")
+            logger.lifecycle("Cobertura report generated at ${output.absolutePath}")
         }
     }
 }
