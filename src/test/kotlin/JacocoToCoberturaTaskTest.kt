@@ -191,7 +191,7 @@ class JacocoToCoberturaTaskTest {
     }
 
     @Test
-    fun `split mode names the default package report default dot xml`() {
+    fun `split mode writes distinct reports for the unnamed package and a package named default`() {
         val inputFile = File(tempDir, "input.xml")
         inputFile.writeText("""
             <?xml version="1.0" encoding="UTF-8"?>
@@ -200,7 +200,10 @@ class JacocoToCoberturaTaskTest {
                 <package name="">
                     <counter type="LINE" missed="0" covered="1"/>
                 </package>
-                <counter type="LINE" missed="0" covered="1"/>
+                <package name="default">
+                    <counter type="LINE" missed="1" covered="0"/>
+                </package>
+                <counter type="LINE" missed="1" covered="1"/>
             </report>
         """.trimIndent())
 
@@ -215,8 +218,8 @@ class JacocoToCoberturaTaskTest {
         task.convert()
 
         val splitDir = File(tempDir, "output-packages")
-        assertTrue(File(splitDir, "default.xml").exists())
-        assertFalse(File(splitDir, ".xml").exists())
+        assertTrue(File(splitDir, "[default].xml").readText().contains("name=\"\""))
+        assertTrue(File(splitDir, "default.xml").readText().contains("name=\"default\""))
     }
 
     @Test
@@ -250,38 +253,57 @@ class JacocoToCoberturaTaskTest {
     }
 
     @Test
-    fun `split mode removes stale package files from the split directory`() {
-        val inputFile = File(tempDir, "input.xml")
-        inputFile.writeText("""
-            <?xml version="1.0" encoding="UTF-8"?>
+    fun `split mode removes only stale reports from previous conversions`() {
+        val splitDir = File(tempDir, "output-packages").apply { mkdirs() }
+        val inputFile = File(splitDir, "input.xml")
+        val currentReport = """
             <report name="test">
-                <sessioninfo id="session" start="1000000" dump="1000001"/>
-                <package name="com/example/package1">
-                    <counter type="LINE" missed="0" covered="1"/>
-                </package>
-                <counter type="LINE" missed="0" covered="1"/>
+                <package name="com/example/package1"/>
             </report>
-        """.trimIndent())
+        """.trimIndent()
+        inputFile.writeText(
+            currentReport.replace("</report>", """<package name="com/example/package0"/></report>""")
+        )
 
         val outputFile = File(tempDir, "output.xml")
-        val splitDir = File(tempDir, "output-packages")
-
         task.inputFile.set(inputFile)
         task.outputFile.set(outputFile)
         task.sourceDirectories.setFrom(emptyList<File>())
         task.splitByPackage.set(true)
-        task.rootPackageToRemove.set("")
 
-        // A report from an earlier run whose package no longer exists
         val staleFile = File(splitDir, "com.example.package0.xml")
-        splitDir.mkdirs()
-        staleFile.writeText("<stale/>")
+        val legacyFile = File(splitDir, "legacy.xml").apply { writeText("<legacy/>") }
+        task.convert()
+        assertTrue(staleFile.exists())
+        assertEquals("<legacy/>", legacyFile.readText())
 
+        val unrelatedFile = File(splitDir, "other-task.xml").apply { writeText("<other/>") }
+        inputFile.writeText(currentReport)
         task.convert()
 
         assertFalse(staleFile.exists())
+        assertEquals(currentReport, inputFile.readText())
+        assertEquals("<legacy/>", legacyFile.readText())
+        assertEquals("<other/>", unrelatedFile.readText())
         assertTrue(File(splitDir, "com.example.package1.xml").exists())
         assertTrue(outputFile.exists())
+    }
+
+    @Test
+    fun `split mode refuses to overwrite an existing unowned report`() {
+        val inputFile = File(tempDir, "input.xml").apply {
+            writeText("""<report name="test"><package name="example"/></report>""")
+        }
+        val splitDir = File(tempDir, "output-packages").apply { mkdirs() }
+        val conflictingFile = File(splitDir, "example.xml").apply { writeText("<other/>") }
+        task.inputFile.set(inputFile)
+        task.outputFile.set(File(tempDir, "output.xml"))
+        task.splitByPackage.set(true)
+
+        val exception = assertThrows<JacocoToCoberturaException> { task.convert() }
+
+        assertTrue(exception.message!!.contains(conflictingFile.absolutePath))
+        assertEquals("<other/>", conflictingFile.readText())
     }
 
     @Test

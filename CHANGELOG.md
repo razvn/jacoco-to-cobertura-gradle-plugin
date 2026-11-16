@@ -3,7 +3,7 @@
 This list is not intended to be all-encompassing - it will document major and breaking changes with their rationale when appropriate:
 
 ### v3.0.0
-- Split mode [Breaking]: per-package reports are now written as `<package>.xml` inside a `<output file base>-packages/` directory next to the output file. Before, each report sat next to the output file as `<output file base>-<package>.xml`. Point GitLab CI at the new paths. A package without a name, which JaCoCo emits for the default package, gets the file `default.xml`.
+- Split mode [Breaking]: reports for named packages are now written as `<package>.xml` inside a `<output file base>-packages/` directory next to the output file. Before, each report sat next to the output file as `<output file base>-<package>.xml`. Point GitLab CI at the new paths. The unnamed package gets `[default].xml`, so it can coexist with `default.xml` for a package named `default`.
 - When `splitByPackage` is on, the combined report is also written to `outputFile`, so the task can be up-to-date and use the build cache. Package files left behind by earlier runs are removed.
 - Requires Gradle 9 or newer, running on JDK 21 or newer (the plugin ships Java 21 bytecode)
 - Removed the legacy SimpleXML implementation; all conversion uses Jackson
