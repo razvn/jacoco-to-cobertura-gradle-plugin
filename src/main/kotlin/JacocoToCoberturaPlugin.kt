@@ -93,7 +93,9 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     init {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         splitOutputDirectory.convention(
-            layout.dir(outputFile.map { splitDirFor(it.asFile) })
+            // locationOnly: Gradle evaluates output conventions before the task runs,
+            // where querying the task's own mapped outputFile is not allowed
+            layout.dir(outputFile.locationOnly.map { splitDirFor(it.asFile) })
         )
     }
 
