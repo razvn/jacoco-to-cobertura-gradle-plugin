@@ -4,9 +4,11 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.file.DirectoryProperty
 import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.*
+import org.gradle.api.file.ProjectLayout
 import org.gradle.kotlin.dsl.configure
 import org.gradle.kotlin.dsl.register
 import org.gradle.kotlin.dsl.withType
@@ -14,6 +16,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.testing.jacoco.plugins.JacocoPlugin
 import org.gradle.testing.jacoco.tasks.JacocoReport
 import java.io.File
+import javax.inject.Inject
 
 class JacocoToCoberturaPlugin : Plugin<Project> {
     override fun apply(project: Project) = project.run {
@@ -69,6 +72,9 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     @get:OutputFile
     abstract val outputFile: RegularFileProperty
 
+    @get:OutputDirectory
+    abstract val splitOutputDirectory: DirectoryProperty
+
     @get:IgnoreEmptyDirectories
     @get:PathSensitive(PathSensitivity.RELATIVE)
     @get:InputFiles
@@ -81,9 +87,18 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
     @get:Input
     abstract val rootPackageToRemove: Property<String>
 
+    @get:Inject
+    protected abstract val layout: ProjectLayout
+
     init {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
+        splitOutputDirectory.convention(
+            layout.dir(outputFile.map { splitDirFor(it.asFile) })
+        )
     }
+
+    private fun splitDirFor(outputFile: File): File =
+        outputFile.parentFile.resolve("${outputFile.nameWithoutExtension}-packages")
 
     @TaskAction
     fun convert() {
@@ -118,15 +133,26 @@ abstract class JacocoToCoberturaTask : DefaultTask() {
         val jacocoData = j2c.loadJacocoData(input)
 
         if (splitByPackage) {
+            // splitOutputDirectory cannot be queried here: its convention maps this task's own
+            // outputFile, and Gradle only resolves that after the task completes
+            val splitDir = splitDirFor(output).also { it.mkdirs() }
+            val packageNames = mutableSetOf<String>()
             jacocoData.packages.forEach { packageElement ->
                 val packageName = packageElement.name?.replace('/', '.') ?: ""
+                packageNames += packageName
                 val packageData = jacocoData.copy(packagesReport = listOf(packageElement))
-                val packageOut = File(output.parentFile, "${output.nameWithoutExtension}-${packageName}.xml")
+                val packageOut = File(splitDir, "${packageName}.xml")
                 j2c.writeCoberturaData(packageOut, j2c.transformData(packageData, sourceDirectories, rootPackage))
                 logger.lifecycle(
                     "Cobertura report for package $packageName generated at ${packageOut.absolutePath}"
                 )
             }
+            // Gradle does not prune untracked files inside an @OutputDirectory, so a package
+            // that disappeared from the report would otherwise leave a stale report behind
+            splitDir.listFiles { file -> file.isFile && file.name.endsWith(".xml") && file.name.removeSuffix(".xml") !in packageNames }
+                ?.forEach { it.delete() }
+            j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
+            logger.lifecycle("Cobertura report generated at ${output.absolutePath}")
         } else {
             j2c.writeCoberturaData(output, j2c.transformData(jacocoData, sourceDirectories, rootPackage))
             logger.lifecycle("Cobertura report generated at ${output.absolutePath}")

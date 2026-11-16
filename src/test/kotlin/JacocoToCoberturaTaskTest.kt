@@ -179,12 +179,50 @@ class JacocoToCoberturaTaskTest {
 
         task.convert()
 
-        // When splitByPackage is true, multiple files should be created
-        val package1File = File(tempDir, "output-com.example.package1.xml")
-        val package2File = File(tempDir, "output-com.example.package2.xml")
+        // When splitByPackage is true, one file per package goes into the split directory,
+        // and the combined report is still written to outputFile
+        val splitDir = File(tempDir, "output-packages")
+        val package1File = File(splitDir, "com.example.package1.xml")
+        val package2File = File(splitDir, "com.example.package2.xml")
 
         assertTrue(package1File.exists())
         assertTrue(package2File.exists())
+        assertTrue(outputFile.exists())
+    }
+
+    @Test
+    fun `split mode removes stale package files from the split directory`() {
+        val inputFile = File(tempDir, "input.xml")
+        inputFile.writeText("""
+            <?xml version="1.0" encoding="UTF-8"?>
+            <report name="test">
+                <sessioninfo id="session" start="1000000" dump="1000001"/>
+                <package name="com/example/package1">
+                    <counter type="LINE" missed="0" covered="1"/>
+                </package>
+                <counter type="LINE" missed="0" covered="1"/>
+            </report>
+        """.trimIndent())
+
+        val outputFile = File(tempDir, "output.xml")
+        val splitDir = File(tempDir, "output-packages")
+
+        task.inputFile.set(inputFile)
+        task.outputFile.set(outputFile)
+        task.sourceDirectories.setFrom(emptyList<File>())
+        task.splitByPackage.set(true)
+        task.rootPackageToRemove.set("")
+
+        // A report from an earlier run whose package no longer exists
+        val staleFile = File(splitDir, "com.example.package0.xml")
+        splitDir.mkdirs()
+        staleFile.writeText("<stale/>")
+
+        task.convert()
+
+        assertFalse(staleFile.exists())
+        assertTrue(File(splitDir, "com.example.package1.xml").exists())
+        assertTrue(outputFile.exists())
     }
 
     @Test
